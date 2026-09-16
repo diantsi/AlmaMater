@@ -1,12 +1,12 @@
 # Alma mater
 
 # Made by:
-- Diana Tsisaruk
-- Oleksandr Skoromnov
-- Alona Dmytrokhina
-- Vika Romaniuk
-- Volodymyr Melnyk
-- Dariia Shyn
+Diana Tsisaruk - Product Manager / UI/UX Designer
+Oleksandr Skoromnov - Backend Developer
+Alona Dmytrokhina - Frontend Developer
+Vika Romaniuk - QA Engineer / Technical Writer
+Volodymyr Melnyk - Backend Developer
+Dariia Shyn - Frontend Developer
 
 # Problem
 Students often struggle to discover relevant university events, projects, and opportunities because information is scattered across different platforms. Many students also have promising ideas but lack teammates with the right skills to bring them to life. Student organizations face similar challenges when trying to reach interested participants and build teams. As a result, useful ideas and opportunities are often missed. 
