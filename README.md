@@ -9,103 +9,38 @@
 - Dariia Shyn - Frontend Developer
 
 # Problem
-Students often struggle to discover relevant university events, projects, and opportunities because information is scattered across different platforms. Many students also have promising ideas but lack teammates with the right skills to bring them to life. Student organizations face similar challenges when trying to reach interested participants and build teams. As a result, useful ideas and opportunities are often missed. 
+Students who want to integrate into university life, gain practical experience, explore academic or career directions, or contribute to meaningful initiatives often discover opportunities through fragmented, incomplete, or late information. Announcements are spread across social media, group chats, email, university pages, and word of mouth, making relevant opportunities easy to miss and difficult to evaluate. Student organizations face the corresponding challenge of reaching students outside their existing audiences while keeping event details complete and up to date.
 
 # Solution
-The project aims to create one platform where students can discover activities, publish ideas, find teammates, and join projects or events.
+AlmaMater aims to provide a reliable, centralized catalog where NaUKMA students can discover and evaluate university events, activities, and opportunities. Student organizations publish structured listings, while students use topic and faculty filters to find relevant options and continue through an external registration form, direct organizer contact, or open attendance. The MVP focuses on the discovery and evaluation stages rather than attempting to guarantee attendance, belonging, skill development, or other long-term outcomes.
 
 # Users 
 The platform is designed for:
-• Students looking for opportunities
-• Students looking for teammates
-• Students looking to gain experience
-• Student organizations and initiative groups
-• Event and project organizers
-• Teachers and university staff
+• Students looking for relevant university events, communities, and a clear way to participate in campus life
+• Students looking for practical experience and academic or career-development opportunities
+• Student organizations, initiative groups, and event organizers publishing opportunities
 
-# Feature plan
-## 1. Student Profile
-
-Each student builds a profile with:
-
-- Name, photo, short bio
-- Faculty, major, and year of study
-- Areas of interest (research, volunteering, sports, arts, entrepreneurship, etc.)
-- Skills and languages
-- Reviews/endorsements from other students and organizers
-
-Ideally would be to use university corporate email.
-
-## 2. Find Events & Teammates
-
-A search tool to find relevant activities and people with similar interests:
-
-- Filter by category, date, faculty, or organization
-- Send a join request or apply directly to a project team
-- Built-in chat to discuss details before committing
-
-## 3. Posting Events, Projects & Meetings
-
-Student organizations (and individual students) can publish listings:
-
-- Date, time, and location (on-campus or online)
-- Type: event, ongoing project, recurring meeting, workshop, etc.
-- Number of spots available
-- Requirements (skills needed, prerequisites, commitment level)
-- Format (one-time, weekly, semester-long)
-
-## 4. Joining Others' Activities
-
-Students browse a feed of upcoming events and projects:
-
-- Send a request to join or simply RSVP
-- Comment on details or ask questions
-- Suggest changes, additional activities, or related ideas
-
-## 6. Campus/Community Map
-
-A visual map where students can:
-
-- Mark buildings, clubs, or venues they've engaged with
-- Leave notes about spaces (best study rooms, event venues, etc.)
-- See what activities are happening where, and other students' check-ins
-
-## 7. Notifications & Recommendations
-
-Students get notified about:
-
-- New events/projects matching their interests
-- Requests to join their team or club
-- Replies and comments on their posts
-
-## 8. Integrations
-
-For convenience, the platform can connect with:
-
-- Google Calendar (personal scheduling)
-- Corporate email auth
+The primary student audience includes students seeking a clearer entry into university life and development-oriented students seeking practical, academic, or career opportunities. Both groups risk missing suitable activities because information is fragmented, incomplete, or arrives too late. Student organizations are the third key persona because they publish the current and complete listings that make the platform useful. Project initiators seeking teammates, teachers, and university staff are potential future audiences rather than the initial focus.
 
 ## Key User Profiles
 
-The following table identifies the critical user groups for AlmaMater, focusing on their real-world contexts and behaviors rather than explicit value propositions.
+The MVP uses three key personas based on their roles and underlying goals rather than faculty or study year. One student persona seeks a manageable entry into university life and communities; the other seeks practical experience and academic or career development. The organizer persona needs to publish complete, current listings and reach relevant students beyond an existing audience.
 
-| Identified Key User Group                  | Key Characteristics (Demographics & Context)                                                                                                                                                                                                                                                                             | Core Use Cases for AlmaMater                                                                                                                                                                                                                                                                | Current Alternatives (What they use today)                                                                                                                                   |
-|:-------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Opportunity-Seeking Students**           | **Demographics:** Undergraduate and graduate students (Years 1-4+).<br>**Context:** Eager to build their resumes, find extracurriculars, and socialize. They often feel overwhelmed by scattered information and fear missing out on campus life. They want a low-friction way to discover what's happening around them. | - Browsing the central feed for events and projects.<br>- Filtering activities by faculty, date, or category.<br>- One-click RSVPs or sending join requests to teams.<br>- Checking the Campus/Community Map for live happenings.                                                           | - Instagram stories from various university clubs.<br>- Cluttered Telegram/WhatsApp cohort chats.<br>- Physical bulletin boards.<br>- Word-of-mouth.                         |
-| **Project Initiators & Idea Generators**   | **Demographics:** Motivated, entrepreneurial, or academically driven students.<br>**Context:** Have specific ideas (startups, hackathon projects, research) but lack complementary skills (e.g., a business student needing a developer, or a designer needing a copywriter). They need reliable, skilled peers.         | - Creating comprehensive Student Profiles detailing their own skills.<br>- Publishing project listings with specific skill requirements and commitment levels.<br>- Reviewing incoming join requests and profiles.<br>- Using built-in chat to interview/discuss with potential teammates.  | - Sending mass messages in general student group chats.<br>- Asking professors for recommendations.<br>- LinkedIn (often too broad/professional for casual campus projects). |
-| **Student Organizations**                  | **Demographics:** Club presidents, event coordinators, student union representatives.<br>**Context:** Tasked with building communities and hosting events. They struggle to reach students outside their immediate follower base, manage attendee lists, and recruit active, committed members.                          | - Publishing detailed event listings (location, spots available, format).<br>- Managing event registrations and RSVPs in one place.<br>- Searching the platform for students with specific interests to proactively invite them.<br>- Sending out notifications to interested demographics. | - Google Forms for registration.<br>- Linktree on Instagram bios.<br>- Facebook Groups.<br>- Manual spreadsheets.                                                            |
-| **Faculty & University Staff**             | **Demographics:** Professors, department heads, and campus administration.<br>**Context:** Want to promote university-backed events, research assistant positions, or official workshops. They often struggle with low student engagement due to relying on outdated official communication channels.                    | - Publishing official academic opportunities or departmental events.<br>- Finding and recruiting motivated students for academic research projects.<br>- Promoting cross-faculty initiatives and institutional announcements.                                                                 | - University LMS (Moodle, Canvas, Blackboard).<br>- Mass email newsletters (frequently ignored by students).<br>- Official faculty websites.                                 |
+| Identified Key User Group | Key Characteristics (Needs & Context) | Core Use Cases for AlmaMater | Current Alternatives (What they use today) |
+|:---|:---|:---|:---|
+| **Students Integrating into University Life** | Students who want to participate in campus life, discover communities, and develop a sense of belonging, but lack a clear overview of available events. They need enough practical and social context to decide whether an activity is relevant and manageable. | - Discovering events and student communities in one catalog.<br>- Filtering activities by topic, faculty, date, or organization.<br>- Checking the format, location, audience, requirements, and participation method.<br>- Finding a clear first step into university activities. | - Cohort and faculty chats.<br>- Instagram and Telegram pages.<br>- Recommendations from classmates.<br>- Word of mouth. |
+| **Development-Oriented Opportunity Seekers** | Students actively looking for practical experience, academic or career direction, and evidence of competence. They compare an opportunity's expected value with its time, travel, workload, and application requirements. | - Finding workshops, projects, competitions, and academic opportunities.<br>- Comparing structured requirements, deadlines, formats, and commitment levels.<br>- Discovering options outside their personal networks.<br>- Continuing to an external application or organizer contact. | - Telegram and Instagram announcements.<br>- Faculty email and university pages.<br>- LinkedIn.<br>- Recommendations from active peers or teachers. |
+| **Student Organizations & Initiative Organizers** | Club coordinators, event organizers, and initiative-group members who need relevant reach beyond their current followers and a stable, complete source of event information. They are essential to solving the platform's content cold-start problem. | - Publishing structured and up-to-date listings.<br>- Making participation requirements and methods clear.<br>- Sharing one listing through existing communication channels.<br>- Directing students to a Google Form, organizer contact, or open attendance. | - Instagram and Telegram posts.<br>- Google Forms.<br>- Group chats and partner reposts.<br>- Email and manual spreadsheets. |
 
 ## Value Proposition Canvas
 
-The following table describes the value proposition for each key AlmaMater user profile by identifying their main **Jobs**, **Pains**, **Gains**, and how the platform addresses their needs.
+The following table connects each audience's underlying **Jobs**, **Pains**, and **Gains** with the value that the agreed MVP can realistically provide. It does not attribute long-term outcomes to AlmaMater that depend on the quality of the activity or the user's ability to attend.
 
 | User Profile | Jobs | Pains | Gains | Solution |
 |:-------------|:-----|:------|:------|:---------|
-| **Opportunity-Seeking Students** | - Discover university events, projects, clubs, and workshops.<br>- Find activities relevant to their interests.<br>- Join events and project teams.<br>- Gain practical experience and meet other students.<br>- Keep track of upcoming activities. | - Information is scattered across multiple platforms.<br>- Relevant opportunities are easy to miss.<br>- Group chats contain too much unrelated information.<br>- It is difficult to know which activities are relevant or still accepting participants.<br>- Managing activities across different platforms is inconvenient. | - One place to discover university opportunities.<br>- Faster search for relevant activities.<br>- Personalized discovery based on interests.<br>- Simple registration and joining process.<br>- Better awareness of campus opportunities. | - Centralized feed for events and projects.<br>- Search and filters by category, faculty, date, and organization.<br>- Recommendations based on student interests.<br>- RSVP and join-request functionality.<br>- Notifications about relevant opportunities.<br>- Google Calendar integration. |
-| **Project Initiators & Idea Generators** | - Turn ideas into real projects.<br>- Find students with complementary skills.<br>- Build project teams.<br>- Present project requirements and goals.<br>- Evaluate potential teammates.<br>- Communicate with interested students. | - Difficult to find students with specific skills.<br>- General university chats are inefficient for recruitment.<br>- Personal networks may be limited.<br>- Difficult to evaluate potential teammates beforehand.<br>- Existing professional platforms are too broad for university projects. | - Faster access to suitable teammates.<br>- Ability to evaluate students based on skills and experience.<br>- More effective team formation.<br>- Greater visibility for project ideas.<br>- Easier communication with potential participants. | - Student profiles containing skills, interests, languages, and experience.<br>- Project listings with required skills and commitment levels.<br>- Search and filtering for potential teammates.<br>- Join requests for reviewing candidates.<br>- Built-in chat for team communication. |
-| **Student Organizations** | - Promote events, clubs, and initiatives.<br>- Recruit participants and new members.<br>- Manage registrations and attendance.<br>- Reach students outside the existing audience.<br>- Build teams for projects and activities.<br>- Communicate updates to participants. | - Social media reaches only part of the student community.<br>- Information disappears quickly in feeds and group chats.<br>- Registrations are spread across forms and spreadsheets.<br>- Recruiting students with specific interests or skills is difficult.<br>- Managing participants across multiple tools requires additional effort. | - Increased visibility among relevant students.<br>- Easier participant recruitment.<br>- Centralized event and registration management.<br>- Better access to students with relevant interests.<br>- More efficient communication with participants. | - Structured event and project listings.<br>- Information about dates, locations, capacity, and requirements.<br>- Centralized RSVP and application management.<br>- Interest-based activity discovery.<br>- Notifications for participants.<br>- Student search based on interests and skills. |
-| **Faculty & University Staff** | - Promote academic events and university opportunities.<br>- Recruit students for research projects.<br>- Share workshops, conferences, and institutional initiatives.<br>- Reach students from relevant faculties.<br>- Improve student participation in university activities. | - Official emails and newsletters may receive little attention.<br>- University website and LMS announcements can be overlooked.<br>- Reaching students outside a specific department is difficult.<br>- Finding motivated students with relevant skills requires significant effort.<br>- Opportunities are distributed across different communication channels. | - Better visibility for academic opportunities.<br>- Direct access to interested students.<br>- Higher awareness of university initiatives.<br>- Easier recruitment for academic projects.<br>- Better cross-faculty communication. | - Publishing official events, research projects, and workshops.<br>- Faculty, interest, and skill-based filtering.<br>- Student profiles for academic recruitment.<br>- Notifications about relevant academic opportunities.<br>- Corporate university email authentication for verified users and official opportunities. |
+| **Students Integrating into University Life** | - Understand which events and communities are currently open.<br>- Find activities that match their interests and circumstances.<br>- Evaluate what participation involves before committing.<br>- Take a manageable first step into university life. | - Event information is fragmented across channels and may arrive too late.<br>- It may be unclear who an event is for or whether newcomers can participate.<br>- Announcements may omit format, location, duration, requirements, or participation instructions.<br>- Social uncertainty, workload, travel, and safety concerns can prevent attendance even when an event is known. | - One place to review current university events.<br>- More confidence that an activity is relevant and feasible.<br>- Enough context to plan participation in advance.<br>- A clearer route into student communities and recurring activities. | - Centralized catalog across onboarded student organizations.<br>- Topic, faculty, date, and organization filters.<br>- Structured event details and a clear participation method.<br>- University email authentication and content moderation.<br>**Limit:** AlmaMater can improve event discovery and reduce uncertainty, but it cannot guarantee attendance, inclusion, belonging, or lasting relationships. |
+| **Development-Oriented Opportunity Seekers** | - Find practical learning, academic, and career opportunities before deadlines.<br>- Compare requirements, time costs, and expected outcomes.<br>- Test a direction and gain useful experience.<br>- Preserve access to opportunities outside existing networks. | - Announcements are fragmented and may be found too late.<br>- Promotional descriptions often omit level, requirements, commitment, or outcomes.<br>- It is difficult to judge organizer credibility and listing status.<br>- Participation may not deliver the expected experience. | - Faster discovery of a limited set of relevant options.<br>- Better comparison before committing.<br>- More time to prepare or apply.<br>- Access to opportunities beyond personal contacts. | - Centralized opportunity catalog.<br>- Structured requirements, deadlines, format, location, and commitment information.<br>- Topic and faculty filters.<br>- External application or organizer-contact links.<br>**Limit:** The MVP does not include personalized recommendations, applications, calendar integration, or guaranteed skill and career outcomes. |
+| **Student Organizations & Initiative Organizers** | - Reach relevant students before a deadline.<br>- Present enough detail for students to evaluate fit independently.<br>- Keep one current version of event information.<br>- Direct interested students to the correct participation method. | - Creating and maintaining announcements across channels takes time.<br>- Existing channels mainly reach current followers.<br>- Posts disappear quickly in feeds and chats.<br>- Incomplete or outdated copies lead to repeated questions and confusion.<br>- Another platform may add work without producing reach. | - Relevant visibility beyond the existing audience.<br>- One stable and complete listing.<br>- Longer discoverability before the event or deadline.<br>- Fewer repeated clarification requests.<br>- Evidence that the channel produces useful interactions. | - Structured publishing form and persistent catalog listing.<br>- Clear participation methods using existing Google Forms, direct contact, or open attendance.<br>- Discovery through topic and faculty filters.<br>- A listing link that can be shared through current channels.<br>**Limit:** The MVP does not centralize registration, attendance, participant management, or guarantee reach. |
 
 ## Critical Analysis and Team Response
 
