@@ -7,13 +7,14 @@
 
 ## User story
 
-> As a student, I want to filter events by faculty, so that I can find activities relevant to my studies.
+> As a student, I want to filter events by one or more faculties, so that I can find activities relevant to my studies.
 
 ## Description
 
-Filter events by faculty.
+Filter events by one or more faculties.
 
 ## Acceptance criteria
 
-- **Given** published events have different faculty values, **when** a student selects a faculty, **then** only matching events remain in the results.
+- **Given** published events have different faculty values, **when** a student selects one or more faculties, **then** only events matching any of the selected faculties remain in the results.
 - **Given** no events match or the filter is cleared, **when** the results update, **then** the catalog respectively shows a no-results state or removes the faculty restriction.
+- **Given** other filters are also active, **when** the results update, **then** only events matching every active filter remain in the results.

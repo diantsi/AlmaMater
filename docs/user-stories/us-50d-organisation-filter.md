@@ -7,13 +7,14 @@
 
 ## User story
 
-> As a student, I want to filter events by organisation, so that I can find activities from a particular organiser.
+> As a student, I want to filter events by one or more organisations, so that I can find activities from a particular organiser.
 
 ## Description
 
-Filter events by organisation.
+Filter events by one or more organisations.
 
 ## Acceptance criteria
 
-- **Given** published events belong to different organisations, **when** a student selects an organisation, **then** only that organisation’s events remain in the results.
+- **Given** published events belong to different organisations, **when** a student selects one or more organisations, **then** only events of any of the selected organisations remain in the results.
 - **Given** no events match or the filter is cleared, **when** the results update, **then** the catalog respectively shows a no-results state or removes the organisation restriction.
+- **Given** other filters are also active, **when** the results update, **then** only events matching every active filter remain in the results.

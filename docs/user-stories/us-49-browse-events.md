@@ -3,7 +3,7 @@
 - **Status:** In scope (MVP)
 - **Journey step:** 6. Success
 - **Source story:** US-49
-- **Dependencies:** US-39
+- **Dependencies:** US-39, US-55b
 
 ## User story
 

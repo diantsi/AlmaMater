@@ -23,6 +23,11 @@ The complete story map arranges the source story pool across the six stages of t
 
 The MVP scope follows the In Scope/Out of Scope decisions in `3.3_story_mapping_scope.md`. In-scope source stories are decomposed into atomic stories using the decomposition approach in `3.4_mvp_story_refinement.md`.
 
+### Scope changes of 2026-10-28
+
+- **Members-only access.** Everyone, organisers and students alike, signs in with a NaUKMA `@ukma.edu.ua` account before seeing any listing. The `Events` page, event details and shared links are not public (US-55a, US-55b; US-43 and US-49 now depend on US-55b).
+- **Event notifications.** US-45 moves from Out of Scope into the MVP and is decomposed into US-45a (subscribe), US-45b (notify on change) and US-45c (notify on cancellation).
+
 ### In Scope (MVP)
 
 | Journey step | ID | Source | Capability |
@@ -30,6 +35,8 @@ The MVP scope follows the In Scope/Out of Scope decisions in `3.3_story_mapping_
 | 1. Sign in | US-01 | US-01 | Sign in using a NaUKMA university email |
 | 1. Sign in | US-02 | US-02 | Land on the organisation dashboard |
 | 1. Sign in | US-03 | US-03 | Link the organiser account to the represented organisation |
+| 1. Sign in | US-55a | US-55 | Sign in as a student with a NaUKMA university account |
+| 1. Sign in | US-55b | US-55 | Show event content only to signed-in university members |
 | 2. Start “Create event” | US-07 | US-07 | Start event creation from a clearly labelled action |
 | 3. Fill in event details | US-12a | US-12 | Enter an event title and description |
 | 3. Fill in event details | US-12b | US-12 | Specify the event date and start time |
@@ -51,12 +58,15 @@ The MVP scope follows the In Scope/Out of Scope decisions in `3.3_story_mapping_
 | 6. Success | US-43 | US-43 | Provide a shareable event link |
 | 6. Success | US-44a | US-44 | Edit a published event |
 | 6. Success | US-44b | US-44 | Cancel a published event |
+| 6. Success | US-45a | US-45 | Subscribe to email updates about an event |
+| 6. Success | US-45b | US-45 | Notify subscribers when an event’s date, time, format, venue or link, or participation changes |
+| 6. Success | US-45c | US-45 | Notify subscribers when an event is cancelled |
 | 6. Success | US-47 | US-47 | Keep an event discoverable until its scheduled date |
 | 6. Success | US-49 | US-49 | Browse events on the `Events` page |
-| 6. Success | US-50a | US-50 | Filter events by topic |
-| 6. Success | US-50b | US-50 | Filter events by faculty |
-| 6. Success | US-50c | US-50 | Filter events by date |
-| 6. Success | US-50d | US-50 | Filter events by organisation |
+| 6. Success | US-50a | US-50 | Filter events by one or more topics |
+| 6. Success | US-50b | US-50 | Filter events by one or more faculties |
+| 6. Success | US-50c | US-50 | Filter events by a date range |
+| 6. Success | US-50d | US-50 | Filter events by one or more organisations |
 | 6. Success | US-51 | US-51 | Open an event’s full details |
 | 6. Success | US-52a | US-52 | Open the selected Google Form |
 | 6. Success | US-52b | US-52 | Access organiser contact details |
@@ -93,7 +103,6 @@ The MVP scope follows the In Scope/Out of Scope decisions in `3.3_story_mapping_
 | 5. Preview, validate, and publish | US-38 | Provide moderator review for flagged listings |
 | 5. Preview, validate, and publish | US-40 | Warn about possible duplicate events |
 | 6. Success | US-42 | Report the status of external posts |
-| 6. Success | US-45 | Automatically notify students about event changes |
 | 6. Success | US-46 | Show listing-view analytics |
 | 6. Success | US-48 | Keep completed events in organisation history |
 | 6. Success | US-53 | Show an organiser profile and its other events |
@@ -108,6 +117,8 @@ Each MVP user story has one canonical specification in `docs/user-stories/`. The
 | [US-01](user-stories/us-01-university-sign-in.md) | University sign-in | 1. Sign in | None |
 | [US-02](user-stories/us-02-organisation-dashboard.md) | Organisation dashboard | 1. Sign in | US-01, US-03 |
 | [US-03](user-stories/us-03-organisation-attribution.md) | Organisation attribution | 1. Sign in | US-01 |
+| [US-55a](user-stories/us-55a-student-sign-in.md) | Student sign-in | 1. Sign in | None |
+| [US-55b](user-stories/us-55b-members-only-access.md) | Members-only access | 1. Sign in | US-55a |
 | [US-07](user-stories/us-07-start-event-creation.md) | Start event creation | 2. Start “Create event” | US-02, US-03 |
 | [US-12a](user-stories/us-12a-title-and-description.md) | Title and description | 3. Fill in event details | US-07 |
 | [US-12b](user-stories/us-12b-date-and-start-time.md) | Date and start time | 3. Fill in event details | US-07 |
@@ -126,11 +137,14 @@ Each MVP user story has one canonical specification in `docs/user-stories/`. The
 | [US-36](user-stories/us-36-final-validation.md) | Final validation | 5. Preview, validate, and publish | US-12a, US-12b, US-12c, US-13, US-15a, US-15b, US-16a, US-16b, US-17a, US-17b, US-17c, US-21, US-25, US-26 |
 | [US-39](user-stories/us-39-publish-event.md) | Publish event | 5. Preview, validate, and publish | US-03, US-36 |
 | [US-41](user-stories/us-41-publication-confirmation.md) | Publication confirmation | 6. Success | US-39 |
-| [US-43](user-stories/us-43-shareable-event-link.md) | Shareable event link | 6. Success | US-39 |
+| [US-43](user-stories/us-43-shareable-event-link.md) | Shareable event link | 6. Success | US-39, US-55b |
 | [US-44a](user-stories/us-44a-edit-a-published-event.md) | Edit a published event | 6. Success | US-03, US-39 |
 | [US-44b](user-stories/us-44b-cancel-a-published-event.md) | Cancel a published event | 6. Success | US-03, US-39 |
+| [US-45a](user-stories/us-45a-subscribe-to-event-updates.md) | Subscribe to event updates | 6. Success | US-51, US-55a |
+| [US-45b](user-stories/us-45b-notify-on-event-changes.md) | Notify on event changes | 6. Success | US-44a, US-45a |
+| [US-45c](user-stories/us-45c-notify-on-event-cancellation.md) | Notify on event cancellation | 6. Success | US-44b, US-45a |
 | [US-47](user-stories/us-47-persistent-discoverability.md) | Persistent discoverability | 6. Success | US-39 |
-| [US-49](user-stories/us-49-browse-events.md) | Browse events | 6. Success | US-39 |
+| [US-49](user-stories/us-49-browse-events.md) | Browse events | 6. Success | US-39, US-55b |
 | [US-50a](user-stories/us-50a-topic-filter.md) | Topic filter | 6. Success | US-15a, US-49 |
 | [US-50b](user-stories/us-50b-faculty-filter.md) | Faculty filter | 6. Success | US-15b, US-49 |
 | [US-50c](user-stories/us-50c-date-filter.md) | Date filter | 6. Success | US-12b, US-49 |

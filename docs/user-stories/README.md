@@ -22,6 +22,8 @@ Acceptance criteria use Given/When/Then phrasing and cover both the expected pat
 - [US-01 — University sign-in](us-01-university-sign-in.md)
 - [US-02 — Organisation dashboard](us-02-organisation-dashboard.md)
 - [US-03 — Organisation attribution](us-03-organisation-attribution.md)
+- [US-55a — Student sign-in](us-55a-student-sign-in.md)
+- [US-55b — Members-only access](us-55b-members-only-access.md)
 
 ### 2. Start “Create event”
 
@@ -58,6 +60,9 @@ Acceptance criteria use Given/When/Then phrasing and cover both the expected pat
 - [US-43 — Shareable event link](us-43-shareable-event-link.md)
 - [US-44a — Edit a published event](us-44a-edit-a-published-event.md)
 - [US-44b — Cancel a published event](us-44b-cancel-a-published-event.md)
+- [US-45a — Subscribe to event updates](us-45a-subscribe-to-event-updates.md)
+- [US-45b — Notify on event changes](us-45b-notify-on-event-changes.md)
+- [US-45c — Notify on event cancellation](us-45c-notify-on-event-cancellation.md)
 - [US-47 — Persistent discoverability](us-47-persistent-discoverability.md)
 - [US-49 — Browse events](us-49-browse-events.md)
 - [US-50a — Topic filter](us-50a-topic-filter.md)
