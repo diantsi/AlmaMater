@@ -1,23 +1,31 @@
 # AlmaMater — MVP HTTP API Contract
 
 **Practice:** 4.3 — Technical contracts  
-**Status:** Complete MVP contract draft for FastAPI; pending final team sign-off (not implemented in Practice 4)  
+**Status:** MVP contract aligned with the requirements digest (D-01…D-10, A-01…A-18); only `GET /api/health` is implemented (walking skeleton)  
 **Date:** 2026-10-28  
-**Related:** [`database-schema.md`](database-schema.md), [`requirements.md`](requirements.md), [`user-stories/`](user-stories/)
+**Related:** [`database-schema.md`](database-schema.md), [`requirements.md`](requirements.md), [`analysis/requirements-digest.md`](analysis/requirements-digest.md), [`user-stories/`](user-stories/), ADRs in [`../raw_research_output/adr/`](../raw_research_output/adr/)
 
 ## 1. Contract boundaries
 
-This specification covers the **current MVP** in `docs/requirements.md` and the individual acceptance criteria under `docs/user-stories/`: institutional sign-in, organiser authorisation, publication/edit/cancellation, student discovery and filters, and external participation routes. There are **no** subscriptions, email notifications, in-app enrolments, draft persistence, moderation workflows, or automatic social-media posting in this contract.
+This specification covers the canonical MVP in `docs/requirements.md` (39 stories):
+- members-only Office 365 sign-in (US-01, US-55a, US-55b)
+- organisation attribution via the registered address (US-02, US-03)
+- publication, editing and cancellation
+- catalog, filters and details
+- external participation routes
+- event subscriptions with change and cancellation emails (US-45a/b/c)
 
-The following are **explicit design assumptions awaiting team approval**, not claims that an ADR already exists:
+There are **no** in-app enrolments, draft persistence, moderation workflows, reminders or automatic social-media posting.
 
-1. All users authenticate through an institutional identity provider; no local password or user self-registration. Student read routes require a university session, following the 2026-10-28 discussion. The alternative of public browsing changes the read-route access rules and link behaviour.
-2. Authenticated users are readers by default. Only users with explicit server-side `userId`–`organizationId` authorisations can create, edit or cancel events for that organisation. A campus email alone is insufficient.
-3. The agreed application stack is **React + Vite** (frontend), **Python + FastAPI + SQLAlchemy** (backend/data access), **PostgreSQL** (database), and **Docker Compose** (local execution). A first-party web client uses a backend-managed session in an HTTP-only cookie with CSRF protection for mutations. The team proposed **Microsoft Entra ID via OIDC**, but university tenant access, app registration, redirect URLs and consent must be confirmed in the authentication ADR before claiming this integration works.
-4. Event creation immediately publishes (`PUBLISHED`) after validation; persisted drafts are not part of MVP. Cancelling changes status to `CANCELLED` while preserving the event's stable detail URL.
-5. IDs are UUID strings; event timestamps are RFC 3339 ISO 8601 instants including an offset; data are stored as UTC instants. Date-filter interpretation uses `Europe/Kyiv`.
+Baseline (contract decisions C-01…C-08 in [`database-schema.md`](database-schema.md) §1.1):
 
-See the decision list D-01–D-08 in `database-schema.md`. **Both documents must be amended together** if the team approves a different approach. The frontend/API contract is framework-neutral JSON over HTTP, to be implemented as FastAPI routes and SQLAlchemy persistence **in a later practice**, not at this stage.
+1. Every user signs in with a verified `@ukma.edu.ua` Office 365 account. Every event read requires a session; nothing is public except sign-in and health (D-06, D-08).
+2. A user may create, edit and cancel events only while signed in with an organisation's registered address, and only for that organisation (D-03). The organisation is derived on the server and never taken from the request.
+3. Stack: React + Vite → FastAPI + SQLAlchemy → PostgreSQL, run with Docker Compose (ADR-002…004, ADR-006). The browser uses one origin; the frontend proxies `/api`. Sessions are server-side, the cookie is `HttpOnly` and mutations need a CSRF token (ADR-005).
+4. Event creation publishes immediately (`PUBLISHED`); cancellation sets `CANCELLED` and keeps the URL. Emails are produced asynchronously from the outbox (ADR-007); no endpoint sends mail directly.
+5. IDs are UUID strings. Instants are RFC 3339 strings with an offset and are stored as UTC. Calendar dates are interpreted in `Europe/Kyiv`.
+
+Both documents change together.
 
 ## 2. General API conventions
 
@@ -25,55 +33,58 @@ See the decision list D-01–D-08 in `database-schema.md`. **Both documents must
 | --- | --- |
 | Base path | `/api` |
 | Transport | HTTPS outside local development |
-| Request/response type | `application/json` unless the response is a redirect or `204 No Content` |
+| Request/response type | `application/json`, except redirects and `204 No Content` |
 | JSON field style | `camelCase` |
 | Identifier | UUID, e.g. `00000000-0000-4000-8000-000000000001` |
-| Date-time | RFC 3339 string with timezone (`2026-11-20T16:00:00+02:00`); server normalises to UTC |
-| Date filter | `YYYY-MM-DD`, interpreted as a whole day in `Europe/Kyiv` |
-| Pagination | `page` is 1-based; default `1`. `size` default `20`, range `1..100`. |
-| Sort | Upcoming listings by ascending `(startsAt, id)`; stable order for pagination |
-| Mutations | All writes validate on the backend and are transactional |
-| Nullable optionals | Omitted on create = absent; explicit `null` on PATCH = clear an optional field |
-| Unknown fields | Reject with `400 MALFORMED_REQUEST`; do not silently persist undocumented data |
+| Date-time | RFC 3339 with offset (`2026-11-20T16:00:00+02:00`); responses use UTC (`Z`) |
+| Calendar date | `YYYY-MM-DD`, a whole day in `Europe/Kyiv` |
+| Pagination | None in the MVP (D-04); lists return all matches |
+| Sort | Catalog by ascending `(startsAt, id)` |
+| Mutations | Validated on the backend; transactional |
+| Nullable optionals | Omitted on create = absent; explicit `null` on PATCH = clear the field |
+| Unknown fields | `400 MALFORMED_REQUEST`; never silently persisted |
 
-**Security:** Authentication must rely on an institution-managed provider confirming a verified eligible email. Session cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` on HTTPS. The server checks the session and organisation authorisation on **every** protected request, including direct API calls. State-changing requests require an `X-CSRF-Token` issued with `GET /api/auth/me`. Production origin/redirect allowlists must be configured; the authentication flow must not accept arbitrary external `returnTo` destinations.
-
-An unauthenticated call to a protected JSON API returns `401` in the standard error format (not an HTML sign-in page). The frontend may then navigate to `/api/auth/login`.
+**Security:**
+- Session cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` on HTTPS.
+- The server checks the session on **every** `/api` request except `auth/login`, `auth/callback` and `health`. It checks organisation management on every mutation, including direct API calls (NFR-02).
+- State-changing requests require the `X-CSRF-Token` header with the value from `GET /api/auth/me`.
+- An unauthenticated call to a protected route returns `401 NOT_AUTHENTICATED` without revealing whether the resource exists. The frontend then navigates to `/api/auth/login?returnTo=<current path>`.
 
 ## 3. Endpoint overview
 
 | Method | Path | Authentication / role | Success | MVP stories |
 | --- | --- | --- | --- | --- |
-| `GET` | `/api/auth/login` | Anonymous | `302` | US-01 |
-| `GET` | `/api/auth/callback` | Identity-provider redirect | `302` | US-01 |
-| `GET` | `/api/auth/me` | Signed-in university user | `200` | US-01, US-02, US-03 |
-| `POST` | `/api/auth/logout` | Signed-in + CSRF | `204` | Session hygiene (supporting contract) |
-| `GET` | `/api/organizations` | Signed-in user | `200` | US-03, US-50d |
-| `GET` | `/api/topics` | Signed-in user | `200` | US-15a, US-50a |
-| `GET` | `/api/faculties` | Signed-in user | `200` | US-15b, US-50b |
-| `GET` | `/api/events` | Signed-in user | `200` | US-47, US-49, US-50a–d |
-| `GET` | `/api/events/{eventId}` | Signed-in user | `200` | US-43, US-51, US-52a–c |
-| `POST` | `/api/events` | Organiser for specified organisation + CSRF | `201` | US-07, US-12a–c, US-13, US-15a–b, US-16a–b, US-17a–c, US-21, US-25, US-26, US-36, US-39, US-41, US-43 |
-| `PATCH` | `/api/events/{eventId}` | Organiser for owning organisation + CSRF | `200` | US-44a, US-36 |
-| `POST` | `/api/events/{eventId}/cancel` | Organiser for owning organisation + CSRF | `200` | US-44b, US-47 |
-| `GET` | `/api/health` | Anonymous | `200` | Practice 4 walking-skeleton check (not a user feature) |
+| `GET` | `/api/auth/login` | Anonymous | `302` | US-01, US-55a, US-55b |
+| `GET` | `/api/auth/callback` | Identity-provider redirect | `302` | US-01, US-55a, US-55b |
+| `GET` | `/api/auth/me` | Member | `200` | US-02, US-03 |
+| `POST` | `/api/auth/logout` | Member + CSRF | `204` | A-01 |
+| `GET` | `/api/organizations` | Member | `200` | US-50d |
+| `GET` | `/api/topics` | Member | `200` | US-15a, US-50a |
+| `GET` | `/api/faculties` | Member | `200` | US-15b, US-50b |
+| `GET` | `/api/events` | Member | `200` | US-47, US-49, US-50a–d |
+| `GET` | `/api/events/{eventId}` | Member | `200` | US-43, US-51, US-52a–c, US-55b |
+| `POST` | `/api/events` | Registered organisation address + CSRF | `201` | US-07, US-12a–c, US-13, US-15a–b, US-16a–b, US-17a–c, US-21, US-25, US-26, US-36, US-39, US-41, US-43 |
+| `PATCH` | `/api/events/{eventId}` | Manager of the owning organisation + CSRF | `200` | US-44a, US-36, US-45b |
+| `POST` | `/api/events/{eventId}/cancel` | Manager of the owning organisation + CSRF | `200` | US-44b, US-47, US-45c |
+| `PUT` | `/api/events/{eventId}/subscription` | Member + CSRF | `200` | US-45a |
+| `DELETE` | `/api/events/{eventId}/subscription` | Member + CSRF | `204` | US-45a |
+| `GET` | `/api/health` | Anonymous | `200` | Walking-skeleton check (not a user feature) |
 
-The organiser's dashboard (US-02) can be rendered using `GET /api/auth/me` and a frontend link to event creation; there is no need to invent a separate dashboard backend feature. Registration actions (US-52a–c) use fields from the event-details response and send users to external destinations; they do **not** generate internal application requests.
+The organisation dashboard (US-02) is rendered from `GET /api/auth/me` plus a link to event creation. Edit and cancel actions appear on the details page when `canManage` is `true` (D-02); there is no list of the organisation's events. Participation actions (US-52a–c) use details fields and lead to external destinations.
 
 ## 4. Authentication and reference data
 
 ### `GET /api/auth/login`
 
-- Starts the configured university OpenID Connect login flow (Microsoft Entra ID **if** the team verifies its availability for the NaUKMA university accounts and registers the app).
-- Optional `returnTo` is a same-origin, allowlisted **relative** path, such as `/events`; reject an arbitrary external URL.
-- `302 Found` redirects to the trusted provider. The server generates and verifies OIDC `state`/`nonce` as applicable.
-- If login fails or the account is not eligible, do not create a session. The frontend displays a safe, generic error; the API uses `401 AUTHENTICATION_FAILED` or `403 UNIVERSITY_ACCOUNT_REQUIRED` where a JSON response is appropriate.
+- Starts the Office 365 OpenID Connect authorisation-code flow for the NaUKMA tenant (ADR-005).
+- Optional `returnTo`: a same-origin **relative** path such as `/events/{eventId}`. It is stored with the OIDC `state` so the member lands on the requested page after sign-in (US-55b AC2). Absolute or protocol-relative URLs are ignored, and the user lands on the default page instead.
+- `302 Found` to the provider. The server generates and later verifies `state` and `nonce`.
 
 ### `GET /api/auth/callback`
 
-- Handles the trusted provider callback, validates issuer, audience, token signature, state and verified institutional email, provisions/updates `users`, then establishes a session.
-- `302 Found` redirects to a safe local frontend path. Provider secrets/tokens never appear in returned event JSON.
-- The exact callback URL/path can be adapted by the authentication framework's ADR **before** frontend integration; do not create a second independent authentication implementation.
+- Validates the provider response: issuer, signature, audience, expiry, `state` and `nonce`. It also checks for a verified email in the `ukma.edu.ua` domain.
+- On success: creates or updates the `users` row (first sign-in creates the member record, A-16), creates a `sessions` row, sets the session cookie, and redirects `302` to the stored `returnTo` or the default page.
+- On failure or an ineligible account: creates no session and redirects `302` to a safe local sign-in page with an error code (`AUTHENTICATION_FAILED` or `UNIVERSITY_ACCOUNT_REQUIRED`) (US-01 AC2, US-55a AC2). Provider tokens never reach the browser.
 
 ### `GET /api/auth/me`
 
@@ -82,30 +93,34 @@ The organiser's dashboard (US-02) can be rendered using `GET /api/auth/me` and a
 ```json
 {
   "id": "00000000-0000-4000-8000-000000000010",
-  "email": "organizer@example.edu",
-  "organizationIds": ["00000000-0000-4000-8000-000000000020"],
+  "email": "member@example.edu",
+  "organization": {
+    "id": "00000000-0000-4000-8000-000000000020",
+    "name": "Example student organisation"
+  },
   "canPublish": true,
   "csrfToken": "session-bound-opaque-value"
 }
 ```
 
-`organizationIds` is server-derived. A student has `organizationIds: []` and `canPublish: false`. Example email/IDs are illustrative, **not** actual NaUKMA domains, accounts or seed data.
+`organization` is the organisation whose registered address the user signed in with (C-02), otherwise `null`. A user without an organisation has `"organization": null` and `canPublish: false` and is never shown another organisation's dashboard (US-02 AC2). Example values are illustrative only.
 
 Errors: `401 NOT_AUTHENTICATED`.
 
 ### `POST /api/auth/logout`
 
-- Requires a valid session and `X-CSRF-Token`; invalidates the session and clears its cookie.
-- Success `204 No Content`; no response body.
+- Revokes the session and clears its cookie. `204 No Content`.
 - Errors: `401 NOT_AUTHENTICATED`, `403 INVALID_CSRF_TOKEN`.
 
 ### `GET /api/organizations`, `GET /api/topics`, `GET /api/faculties`
 
-Each route returns `200 OK` and a plain array of `{ "id": "uuid", "code": "slug", "name": "Display name" }`. The `organizations` records use `slug` rather than `code`; their array shape is `{ "id": "uuid", "slug": "slug", "name": "Display name" }`.
+`200 OK` with a plain array:
+- topics, faculties: `{ "id": "uuid", "code": "code", "name": "Display name" }`
+- organisations: `{ "id": "uuid", "slug": "slug", "name": "Display name" }`
 
-The lists contain only seeded real records approved by the team. Their initial exact values are **not yet established** in the current requirements. These routes have no mutation endpoints in MVP.
+`registered_email` is never exposed. The lists contain only approved seed records (not yet supplied). There are no mutation endpoints.
 
-Errors: `401 NOT_AUTHENTICATED`; `500 INTERNAL_ERROR` for unexpected failures.
+Errors: `401 NOT_AUTHENTICATED`, `500 INTERNAL_ERROR`.
 
 ## 5. Event DTOs and validation
 
@@ -113,32 +128,31 @@ Errors: `401 NOT_AUTHENTICATED`; `500 INTERNAL_ERROR` for unexpected failures.
 
 | JSON field | Type | Required? | Rules |
 | --- | --- | --- | --- |
-| `organizationId` | UUID string | Yes | Must be an organisation for which the caller has publishing rights. |
 | `title` | string | Yes | Non-empty trimmed; max 160 characters. |
 | `description` | string | Yes | Non-empty trimmed. |
-| `startsAt` | RFC 3339 string | Yes | Valid future instant with timezone offset. |
+| `startsAt` | RFC 3339 string | Yes | Valid instant in the future (A-08). |
 | `speakerName` | string / null | No | If supplied, non-empty trimmed; max 160 characters. |
 | `topicId` | UUID string | Yes | Must exist in `topics`. |
 | `facultyId` | UUID string | Yes | Must exist in `faculties`. |
 | `intendedAudience` | string / null | No | If supplied, non-empty trimmed. |
-| `newcomersWelcome` | boolean / null | No | `true`/`false`; do not invent a value if absent. |
+| `newcomersWelcome` | boolean / null | No | `true` / `false`; no invented default. |
 | `format` | enum | Yes | `ONLINE` or `IN_PERSON`. |
-| `venue` | string / null | Conditional | Required for `IN_PERSON`; max 500 characters; not used for `ONLINE`. |
-| `meetingUrl` | string / null | Conditional | Required for `ONLINE`; valid HTTPS URL; not used for `IN_PERSON`. |
-| `durationMinutes` | integer | Yes | Greater than zero. |
-| `registrationDeadline` | RFC 3339 string / null | No | If provided, must precede `startsAt`. |
+| `venue` | string / null | Conditional | Required for `IN_PERSON`; max 500 characters; must be null for `ONLINE`. |
+| `meetingUrl` | string / null | Conditional | Required for `ONLINE`; well-formed `https://` URL; must be null for `IN_PERSON`. |
+| `durationMinutes` | integer / null | No | If supplied, greater than zero. |
+| `registrationDeadline` | RFC 3339 string / null | No | If supplied, not after `startsAt`. |
 | `participationMethod` | enum | Yes | `GOOGLE_FORM`, `DIRECT_CONTACT` or `OPEN_ATTENDANCE`. |
-| `googleFormUrl` | string / null | Conditional | Required only for `GOOGLE_FORM`, HTTPS Google Forms URL. |
-| `contactDetails` | string / null | Conditional | Required only for `DIRECT_CONTACT`, non-empty trimmed. |
-| `attendanceInstructions` | string / null | Conditional | Required only for `OPEN_ATTENDANCE`, non-empty trimmed. |
+| `googleFormUrl` | string / null | Conditional | Required only for `GOOGLE_FORM`; well-formed `https://` URL (no domain check, A-09). |
+| `contactDetails` | string / null | Conditional | Required only for `DIRECT_CONTACT`; non-empty trimmed free text. |
+| `attendanceInstructions` | string / null | Conditional | Required only for `OPEN_ATTENDANCE`; non-empty trimmed. |
 
-Only the selected method's details may be non-null. On the other two methods, those fields must be **absent or null**. Similarly, only the location field relevant to `format` may be populated. The server never accepts client-controlled `id`, `createdByUserId`, `status`, `publishedAt`, `cancelledAt`, `eventUrl` or `organization` display name.
-
-This required/optional matrix is a reasoned **proposal**: the existing acceptance criteria explicitly leave some required fields undecided. The team must approve it and any allowed-value lists before implementation. Rules apply identically to POST and to the merged resulting state after PATCH.
+- The fields of the other two methods and the location field not used by `format` must be absent or null.
+- The server never accepts client-controlled `id`, `organizationId`, `createdByUserId`, `status`, `revision`, `publishedAt`, `cancelledAt` or `eventUrl`.
+- This matrix is the product-owner decision D-01/D-05 (`database-schema.md` §5). The same rules apply to POST and to the merged state after PATCH.
 
 ### 5.2 Event response shape
 
-Both `GET /api/events/{eventId}` and successful POST/PATCH return this full representation (the `eventUrl` is a frontend route, not an external URL):
+`GET /api/events/{eventId}` and successful POST/PATCH return this full representation. `eventUrl` is a frontend route.
 
 ```json
 {
@@ -146,6 +160,7 @@ Both `GET /api/events/{eventId}` and successful POST/PATCH return this full repr
   "organizationId": "00000000-0000-4000-8000-000000000020",
   "organizationName": "Example student organisation",
   "status": "PUBLISHED",
+  "revision": 1,
   "title": "Example workshop",
   "description": "An introductory workshop.",
   "startsAt": "2026-11-20T14:00:00Z",
@@ -157,47 +172,57 @@ Both `GET /api/events/{eventId}` and successful POST/PATCH return this full repr
   "format": "IN_PERSON",
   "venue": "Example campus room",
   "meetingUrl": null,
-  "durationMinutes": 90,
+  "durationMinutes": null,
   "registrationDeadline": "2026-11-19T16:00:00Z",
   "participationMethod": "GOOGLE_FORM",
-  "googleFormUrl": "https://docs.google.com/forms/d/e/example/viewform",
+  "googleFormUrl": "https://forms.example/example-form",
   "contactDetails": null,
   "attendanceInstructions": null,
   "publishedAt": "2026-10-28T12:00:00Z",
   "updatedAt": "2026-10-28T12:00:00Z",
   "cancelledAt": null,
-  "eventUrl": "/events/00000000-0000-4000-8000-000000000001"
+  "eventUrl": "/events/00000000-0000-4000-8000-000000000001",
+  "canManage": false,
+  "subscribed": false
 }
 ```
 
-All sample values are fabricated for format demonstration only. Optional properties are returned as `null` when not supplied; the UI must hide unknown/irrelevant details instead of inventing them. For a cancelled event, `status` is `CANCELLED` and `cancelledAt` is a UTC timestamp. `eventUrl` must remain unchanged for the lifetime of the record.
+- `canManage`: the caller is signed in with the owning organisation's registered address (drives the edit and cancel actions, D-02).
+- `subscribed`: the caller has a subscription to this event (US-45a).
+- The client derives "past" from `startsAt`. It offers no subscription, edit or cancel action for cancelled or past events (US-45a AC3, A-13, A-14).
+- Optional properties are `null` when not supplied, and the UI hides them instead of inventing values (BR-43). For a cancelled event, `status` is `CANCELLED` and `cancelledAt` is set. `eventUrl` never changes.
 
 ### 5.3 External participation presentation
 
-The frontend uses the full event DTO without additional endpoints:
-
 | Method | Student UI behaviour | What must **not** happen |
 | --- | --- | --- |
-| `GOOGLE_FORM` | Render an external-link action pointing to `googleFormUrl`. | Do not claim the application registered the student. |
-| `DIRECT_CONTACT` | Show `contactDetails` as provided. | Do not invent contact information or create an internal chat. |
-| `OPEN_ATTENDANCE` | Show `attendanceInstructions` and explain that internal registration is unnecessary. | Do not show a misleading registration button. |
+| `GOOGLE_FORM` | External-link action to `googleFormUrl`. | Do not claim the application registered the student. |
+| `DIRECT_CONTACT` | Show `contactDetails` as written. | Do not invent contacts or add an internal chat. |
+| `OPEN_ATTENDANCE` | Show `attendanceInstructions`; no internal registration implied. | No misleading registration button. |
+
+The subscription button is separate from the participation action and does not register attendance anywhere.
 
 ## 6. Event endpoints
 
-### 6.1 `GET /api/events` — browse/filter active upcoming listings
+### 6.1 `GET /api/events` — browse/filter active upcoming events
 
 Query parameters (all optional):
 
-| Parameter | Type | Validation / semantics |
+| Parameter | Type | Semantics |
 | --- | --- | --- |
-| `topicId` | UUID | Matches `events.topic_id`. |
-| `facultyId` | UUID | Matches `events.faculty_id`. |
-| `organizationId` | UUID | Matches `events.organization_id`. |
-| `date` | `YYYY-MM-DD` | Starts within that calendar day in `Europe/Kyiv`. |
-| `page` | positive integer | Default `1`. |
-| `size` | integer `1..100` | Default `20`. |
+| `topicId` | UUID, repeatable | Event's topic is **any** of the given values (US-50a). |
+| `facultyId` | UUID, repeatable | Event's faculty is any of the given values (US-50b). |
+| `organizationId` | UUID, repeatable | Event's organisation is any of the given values (US-50d). |
+| `dateFrom` | `YYYY-MM-DD` | Event starts on or after the start of this day (Europe/Kyiv). |
+| `dateTo` | `YYYY-MM-DD` | Event starts on or before the end of this day (Europe/Kyiv). |
 
-All supplied filters combine with **AND**. The default list includes only `status=PUBLISHED` and `startsAt >= current server time`; do not show cancelled events as active. Filtering by date is still constrained to upcoming active events. No matching events is a successful empty result (`200`), not `404`.
+- Within one parameter, values combine with **OR**; different parameters combine with **AND** (D-04, US-50a–d AC3/AC4).
+- The date range is inclusive at both ends, matched on the event's start date, and either bound may be omitted (US-50c).
+- Server-side, `dateTo` becomes `starts_at < start of the next day` in Europe/Kyiv.
+- Example: `/api/events?topicId=A&topicId=B&facultyId=C&dateFrom=2026-11-01`.
+- The result contains only `PUBLISHED` events with `startsAt > now` (US-47). Cancelled and past events never appear.
+- Order is ascending `(startsAt, id)`. There is no pagination.
+- No matches is `200` with `items: []`; the UI shows the empty or no-results state (US-49 AC2).
 
 `200 OK`:
 
@@ -208,36 +233,35 @@ All supplied filters combine with **AND**. The default list includes only `statu
       "id": "00000000-0000-4000-8000-000000000001",
       "title": "Example workshop",
       "startsAt": "2026-11-20T14:00:00Z",
-      "status": "PUBLISHED",
       "organizationId": "00000000-0000-4000-8000-000000000020",
       "organizationName": "Example student organisation",
       "topicId": "00000000-0000-4000-8000-000000000030",
       "facultyId": "00000000-0000-4000-8000-000000000040",
-      "format": "IN_PERSON"
+      "format": "IN_PERSON",
+      "eventUrl": "/events/00000000-0000-4000-8000-000000000001"
     }
-  ],
-  "page": 1,
-  "size": 20,
-  "totalItems": 1
+  ]
 }
 ```
 
-`items` contains compact cards, not full event details. `totalItems` counts all matches before pagination. The result ordering is ascending `(startsAt, id)`.
+Errors:
+- `400 MALFORMED_REQUEST`: malformed UUID or date
+- `422 VALIDATION_ERROR`: `dateFrom` after `dateTo`; detail field `dateTo`
+- `401 NOT_AUTHENTICATED`
+- `500 INTERNAL_ERROR`
 
-Errors: `400 MALFORMED_REQUEST` for malformed filters/pagination; `401 NOT_AUTHENTICATED`; `500 INTERNAL_ERROR`.
+### 6.2 `GET /api/events/{eventId}` — details / shareable URL
 
-### 6.2 `GET /api/events/{eventId}` — full details / shareable URL
-
-- `200 OK` with the full event DTO from §5.2 for a known published **or cancelled** event, including a prominent status for the UI.
-- A valid, known cancelled URL continues to resolve. It is not advertised as an upcoming active event.
-- A past `PUBLISHED` event may still resolve by direct URL even though it is absent from the default upcoming list; no history catalogue is required.
-- `400 MALFORMED_REQUEST` for a malformed UUID; `401 NOT_AUTHENTICATED`; `404 EVENT_NOT_FOUND` for an unknown ID.
+- `200 OK` with the full DTO from §5.2 for any known event: published, cancelled or past. Cancelled and past events are marked so the UI never presents them as attendable (US-44b AC1, US-47 AC2).
+- Errors:
+  - `401 NOT_AUTHENTICATED`: checked before the ID, so visitors learn nothing (US-55b AC1)
+  - `400 MALFORMED_REQUEST`: malformed UUID
+  - `404 EVENT_NOT_FOUND`: unknown ID
 
 ### 6.3 `POST /api/events` — validate and publish
 
-Requires an authenticated organiser and `X-CSRF-Token`. The server verifies that the caller is authorised for `organizationId`, validates **all** fields, and inserts an event only if the entire input is valid. No partially persisted drafts.
-
-Example request:
+- Requires a session whose email is an organisation's registered address, plus `X-CSRF-Token`. The organisation comes from that match.
+- The server validates **all** fields and inserts the event only if the whole input is valid. Nothing is stored otherwise (US-36 AC2, US-39 AC2).
 
 ```http
 POST /api/events
@@ -247,7 +271,6 @@ X-CSRF-Token: <session-bound-token>
 
 ```json
 {
-  "organizationId": "00000000-0000-4000-8000-000000000020",
   "title": "Example workshop",
   "description": "An introductory workshop.",
   "startsAt": "2026-11-20T16:00:00+02:00",
@@ -256,54 +279,112 @@ X-CSRF-Token: <session-bound-token>
   "newcomersWelcome": true,
   "format": "IN_PERSON",
   "venue": "Example campus room",
-  "durationMinutes": 90,
   "registrationDeadline": "2026-11-19T18:00:00+02:00",
   "participationMethod": "GOOGLE_FORM",
-  "googleFormUrl": "https://docs.google.com/forms/d/e/example/viewform"
+  "googleFormUrl": "https://forms.example/example-form"
 }
 ```
 
 Success:
+- `201 Created` with the full DTO and the header `Location: /api/events/{newId}`.
+- `eventUrl` serves the confirmation and the share link (US-41, US-43). The frontend shows success only after the `201` (US-41 AC2) and disables repeat submission while the request is pending (NFR-10).
 
-- `201 Created` with the full event DTO from §5.2.
-- Response header `Location: /api/events/{newId}`.
-- `eventUrl` points to `/events/{newId}` for the UI confirmation/shareable link (US-41, US-43).
-
-Errors: `400 MALFORMED_REQUEST`, `401 NOT_AUTHENTICATED`, `403 ORGANIZATION_ACCESS_DENIED`, `403 INVALID_CSRF_TOKEN`, `422 VALIDATION_ERROR`, `500 INTERNAL_ERROR`.
+Errors:
+- `400 MALFORMED_REQUEST`
+- `401 NOT_AUTHENTICATED`
+- `403 ORGANIZATION_ACCESS_DENIED`: not a registered address (US-03 AC2, US-07 AC2)
+- `403 INVALID_CSRF_TOKEN`
+- `422 VALIDATION_ERROR`
+- `500 INTERNAL_ERROR`
 
 ### 6.4 `PATCH /api/events/{eventId}` — edit a published event
 
-- Requires organiser authorisation for the event's **existing** `organizationId`, not just any organisation.
-- Accepts a **partial** object using the editable fields from §5.1 **except** `organizationId`; the request must contain at least one editable field.
-- Example: `{ "title": "Updated workshop title", "durationMinutes": 120 }`.
-- On format or participation-method changes, the resulting merged event must satisfy the conditional-field rules. To clear a no-longer-relevant optional/conditional field, send it as `null` in the same PATCH request.
-- Validate the **complete resulting event** before saving and apply all changes atomically. If invalid, leave the published record unchanged.
-- `200 OK` with the full updated event DTO. The ID and `eventUrl` do not change.
+- Requires the session to manage the event's owning organisation, plus `X-CSRF-Token`.
+- The body is a partial object with the editable fields from §5.1, plus a **required** `revision`: the revision the client loaded.
+  - Example: `{ "revision": 3, "startsAt": "2026-11-21T16:00:00+02:00" }`
+  - The body must contain at least one editable field besides `revision`.
+- When the format or participation method changes, the merged event must satisfy the conditional-field rules; send no-longer-relevant fields as `null`.
+- The server validates the **complete merged event** and applies all changes atomically:
+  - an effective change increments `revision`
+  - if D-10 applies, it writes `CHANGED` notification deliveries in the same transaction (US-45b; trigger table in `database-schema.md` §3.7)
+  - a rejected edit changes nothing and sends nothing (US-44a AC2, US-45b AC2)
+- `200 OK` with the full updated DTO. ID and `eventUrl` are unchanged (US-44a AC1).
 
-Errors: `400 MALFORMED_REQUEST`, `401 NOT_AUTHENTICATED`, `403 ORGANIZATION_ACCESS_DENIED`, `403 INVALID_CSRF_TOKEN`, `404 EVENT_NOT_FOUND`, `409 EVENT_NOT_EDITABLE` (cancelled), `422 VALIDATION_ERROR`, `500 INTERNAL_ERROR`.
+Errors:
+- `400 MALFORMED_REQUEST`
+- `401 NOT_AUTHENTICATED`
+- `403 ORGANIZATION_ACCESS_DENIED`
+- `403 INVALID_CSRF_TOKEN`
+- `404 EVENT_NOT_FOUND`
+- `409 EVENT_NOT_EDITABLE`: cancelled or past
+- `409 EVENT_REVISION_CONFLICT`: `revision` is stale; the client reloads
+- `422 VALIDATION_ERROR`
+- `500 INTERNAL_ERROR`
 
 ### 6.5 `POST /api/events/{eventId}/cancel` — cancel a published event
 
-- No JSON request body. Caller must be authorised for the event's owning organisation and send `X-CSRF-Token`.
-- `200 OK` response:
+- No request body. Requires the session to manage the owning organisation, plus `X-CSRF-Token`.
+- In one transaction: sets `CANCELLED`, increments `revision`, writes one `CANCELLED` delivery per subscriber, and ends the subscriptions (US-45c, A-17).
+- `200 OK`:
 
 ```json
 {
   "id": "00000000-0000-4000-8000-000000000001",
   "status": "CANCELLED",
+  "revision": 4,
   "cancelledAt": "2026-11-01T09:00:00Z",
   "eventUrl": "/events/00000000-0000-4000-8000-000000000001"
 }
 ```
 
-- Event is removed from default active results immediately; details remain accessible at the unchanged URL showing cancellation.
-- Repeated cancellation is **not** a second state change: return `409 EVENT_ALREADY_CANCELLED` with the standard error format.
+- The event leaves the catalog immediately. Its URL keeps resolving and shows the cancellation.
+- A repeated cancellation returns `409 EVENT_ALREADY_CANCELLED` with no state change and no email (US-44b AC2, US-45c AC2).
 
-Errors: `400 MALFORMED_REQUEST`, `401 NOT_AUTHENTICATED`, `403 ORGANIZATION_ACCESS_DENIED`, `403 INVALID_CSRF_TOKEN`, `404 EVENT_NOT_FOUND`, `409 EVENT_ALREADY_CANCELLED`, `500 INTERNAL_ERROR`.
+Errors:
+- `400 MALFORMED_REQUEST`
+- `401 NOT_AUTHENTICATED`
+- `403 ORGANIZATION_ACCESS_DENIED`
+- `403 INVALID_CSRF_TOKEN`
+- `404 EVENT_NOT_FOUND`
+- `409 EVENT_ALREADY_CANCELLED`
+- `409 EVENT_NOT_EDITABLE`: past event
+- `500 INTERNAL_ERROR`
+
+### 6.6 `PUT /api/events/{eventId}/subscription` — subscribe
+
+- Member + `X-CSRF-Token`; no request body. Idempotent: subscribing twice keeps one subscription.
+- `200 OK`: `{ "eventId": "…", "subscribed": true }` (US-45a AC1).
+- Errors:
+  - `400 MALFORMED_REQUEST`
+  - `401 NOT_AUTHENTICATED`
+  - `403 INVALID_CSRF_TOKEN`
+  - `404 EVENT_NOT_FOUND`
+  - `409 EVENT_NOT_SUBSCRIBABLE`: cancelled or past (US-45a AC3)
+  - `500 INTERNAL_ERROR`
+
+### 6.7 `DELETE /api/events/{eventId}/subscription` — unsubscribe
+
+- Member + `X-CSRF-Token`. Idempotent: `204 No Content` also when no subscription exists. No further emails about the event reach this member (US-45a AC2).
+- Errors:
+  - `400 MALFORMED_REQUEST`
+  - `401 NOT_AUTHENTICATED`
+  - `403 INVALID_CSRF_TOKEN`
+  - `404 EVENT_NOT_FOUND`
+  - `500 INTERNAL_ERROR`
+
+### 6.8 Notification emails (no endpoint)
+
+The worker (ADR-007) sends the emails written to `notification_deliveries`:
+- one email per subscriber and committed change
+- fixed Ukrainian template: event title, what happened, current date and time, `eventUrl` (A-18)
+- sent from one platform sender address
+- never reveals other recipients
+
+Delivery failures are retried and never affect the API response that committed the change (NFR-20).
 
 ## 7. Unified error response
 
-Every non-2xx **JSON API** failure uses this envelope. OAuth redirect navigation is the only format exception; failures that return JSON still follow this structure.
+Every non-2xx JSON API failure uses this envelope. OAuth redirects (`/auth/login`, `/auth/callback`) are the only exception.
 
 ```json
 {
@@ -320,60 +401,60 @@ Every non-2xx **JSON API** failure uses this envelope. OAuth redirect navigation
 
 | Field | Type | Rule |
 | --- | --- | --- |
-| `code` | string | Stable machine-readable error code from the table below. |
-| `message` | string | Human-readable, safe; never include secrets, stack traces or sensitive identity data. |
-| `details` | array of `{field, message}` | **Always present**, empty `[]` for non-field errors. Field names match JSON request paths. All detectable field errors are returned together (US-36). |
-| `requestId` | string | Non-sensitive request correlation ID, included in server logs. |
-| `timestamp` | RFC 3339 string | UTC instant of error response. |
+| `code` | string | Stable machine-readable code from the table below. |
+| `message` | string | Human-readable and safe; never secrets, stack traces or identity data. |
+| `details` | array of `{field, message}` | **Always present**; `[]` for non-field errors. `field` matches the JSON request path. All detectable field errors are returned together (US-36). |
+| `requestId` | string | Non-sensitive correlation ID, also written to server logs. |
+| `timestamp` | RFC 3339 string | UTC instant of the error. |
 
 | HTTP status | Code(s) | Typical cause |
 | --- | --- | --- |
-| `400 Bad Request` | `MALFORMED_REQUEST` | Invalid JSON, invalid UUID/query syntax, unsupported/immutable fields, empty PATCH body. |
-| `401 Unauthorized` | `NOT_AUTHENTICATED`, `AUTHENTICATION_FAILED` | Session missing/expired or institutional sign-in failed. |
-| `403 Forbidden` | `ORGANIZATION_ACCESS_DENIED`, `UNIVERSITY_ACCOUNT_REQUIRED`, `INVALID_CSRF_TOKEN` | Signed-in user lacks organisation grant, institutional account is ineligible, or CSRF check fails. |
-| `404 Not Found` | `EVENT_NOT_FOUND` | Valid UUID does not identify an accessible event. |
-| `409 Conflict` | `EVENT_ALREADY_CANCELLED`, `EVENT_NOT_EDITABLE` | Illegal lifecycle operation. |
-| `422 Unprocessable Content` | `VALIDATION_ERROR` | Recognised request with missing/invalid required fields, invalid domain values, bad date relationships, or incompatible conditional inputs. |
-| `500 Internal Server Error` | `INTERNAL_ERROR` | Unanticipated server/database failure; generic response only. |
+| `400 Bad Request` | `MALFORMED_REQUEST` | Invalid JSON, UUID or date syntax; unknown or immutable fields; PATCH without editable fields. |
+| `401 Unauthorized` | `NOT_AUTHENTICATED`, `AUTHENTICATION_FAILED` | Session missing, expired or revoked; sign-in failed. |
+| `403 Forbidden` | `ORGANIZATION_ACCESS_DENIED`, `UNIVERSITY_ACCOUNT_REQUIRED`, `INVALID_CSRF_TOKEN` | Caller does not manage the organisation; account is not `@ukma.edu.ua`; CSRF check failed. |
+| `404 Not Found` | `EVENT_NOT_FOUND` | Valid UUID that identifies no event. |
+| `409 Conflict` | `EVENT_ALREADY_CANCELLED`, `EVENT_NOT_EDITABLE`, `EVENT_REVISION_CONFLICT`, `EVENT_NOT_SUBSCRIBABLE` | Illegal lifecycle operation or concurrent edit. |
+| `422 Unprocessable Content` | `VALIDATION_ERROR` | Missing or invalid required fields, unknown dictionary IDs, bad date relationships, incompatible conditional fields, `dateFrom > dateTo`. |
+| `500 Internal Server Error` | `INTERNAL_ERROR` | Unexpected failure; generic message only. |
 
-Error guarantees:
+Guarantees:
 
-1. A failed POST does **not** create an event; a failed PATCH/cancel does **not** change any stored data.
-2. Client code uses `code` for behaviour and `details[*].field` for field highlighting; it does not parse English `message` text.
-3. Unknown user-facing details (such as whether another organisation owns a resource) must not leak in errors. Log diagnostic information on the server, keyed by `requestId`.
-4. For an invalid publishing request, accumulate and return all determinable field violations in one `422` response rather than stopping after the first.
+1. A failed POST creates no event. A failed PATCH, cancel or subscription call changes no stored data and queues no email.
+2. Clients branch on `code` and highlight fields by `details[*].field`; they never parse `message`.
+3. Errors do not leak details such as another organisation's data or subscriber identities (NFR-04, NFR-19).
+4. An invalid publish or edit returns every determinable field violation in one `422`.
 
 ## 8. Walking-skeleton integration contract
 
-`GET /api/health` returns a simple JSON response with HTTP `200 OK`, for example:
+`GET /api/health` returns HTTP `200 OK`:
 
 ```json
 { "status": "ok", "service": "almamater-api" }
 ```
 
-This route is unauthenticated and proves the UI–API connection in Practice 4. Actual DB connectivity is verified separately by the scaffold's startup/test connection or initial migration; do not claim the health route checks the database unless the backend actually implements that check. **No business-feature endpoints need to be implemented during Practice 4.**
+The route is anonymous and proves the UI–API connection. Database connectivity is verified separately by the skeleton tests (`SELECT 1`, Alembic revision `0001`). The health route does not check the database.
 
-## 9. Acceptance/contract test checklist (for later implementation)
+## 9. Acceptance/contract test checklist (for implementation)
 
-- [ ] Student logs in with a verified eligible account, can call GET routes, but `POST /api/events` returns `403` without organisation authorisation (US-01, US-03).
-- [ ] Organiser can publish only for an organisation in their server-derived authorisation list (US-03, US-39).
-- [ ] Valid event publication returns `201` + stable detail URL and event appears in default catalogue (US-39, US-41, US-43).
-- [ ] Missing required fields return one `422` envelope listing **all** errors, with no event created (US-13, US-36).
-- [ ] Invalid topic/faculty IDs and invalid date/format/participation combinations are rejected (US-15a–b, US-17a–b, US-25–26).
-- [ ] One selected external participation method is displayed; no in-app registration is implied (US-52a–c).
-- [ ] Topic, faculty, date and organisation filters each work; combined filters use AND; zero results return `200` and `items: []` (US-49, US-50a–d).
-- [ ] Valid edit returns updated details at the **same** URL; unauthorised/invalid edit preserves previous data (US-44a).
-- [ ] Cancellation changes state, removes event from active upcoming list, and keeps the old URL showing `CANCELLED` (US-44b, US-47).
-- [ ] Repeated cancellation returns `409`, making no state change (US-44b).
-- [ ] Missing/expired session returns `401` for protected APIs; invalid/missing CSRF token returns `403` for mutations.
-- [ ] All failures have the same `code`, `message`, `details`, `requestId`, `timestamp` structure.
-- [ ] Only `GET /api/health` is needed as the simple API endpoint during the Practice 4 live demo.
+- [ ] A non-`@ukma.edu.ua` or failed sign-in creates no session; an eligible one does (US-01, US-55a).
+- [ ] Without a session, every event route returns `401`. A shared link sends the visitor through sign-in and lands them back on the event (US-55b).
+- [ ] An ordinary member gets `canPublish: false`, `organization: null`, and `403` on `POST /api/events` (US-02, US-03, US-07).
+- [ ] The registered address publishes; the event appears in the catalog under its organisation with a stable `eventUrl` (US-39, US-41, US-43).
+- [ ] Missing or invalid fields return one `422` listing **all** errors, and no event is created (US-13, US-36).
+- [ ] Invalid topic/faculty IDs, non-https links, a deadline after the start, and wrong format/method field combinations are rejected (US-15a–b, US-17a–c, US-21, US-25–26).
+- [ ] Only the chosen participation method is shown, and no in-app registration is implied (US-52a–c).
+- [ ] Multi-select OR within a filter, AND between filters, an inclusive and open-ended date range, and an empty result as `200 items: []` (US-49, US-50a–d).
+- [ ] A valid edit keeps the URL; a stale `revision` returns `409`; an unauthorised or invalid edit changes nothing (US-44a).
+- [ ] Cancellation removes the event from the catalog, the URL shows `CANCELLED`, a repeat returns `409`, and editing afterwards returns `409` (US-44b, US-47).
+- [ ] Subscribe and unsubscribe are idempotent; subscribing to a cancelled or past event returns `409` (US-45a).
+- [ ] An edit to date/time/format/venue/link/method/method field queues one `CHANGED` delivery per subscriber; other edits and rejected edits queue none (US-45b).
+- [ ] The first cancellation queues one `CANCELLED` delivery per subscriber; a repeat queues none; a mail failure does not undo the change (US-45c).
+- [ ] Mutations without a valid CSRF token return `403`.
+- [ ] All failures use the same `code`/`message`/`details`/`requestId`/`timestamp` envelope.
 
-## 10. Unresolved team inputs (must be settled before code)
+## 10. Open inputs (must be settled before the related code)
 
-1. Exact university identity provider and eligible email-domain policy; confirm auth ADR and session mechanism.
-2. Confirm the agreed direction that all students sign in rather than using a public catalogue; if public browsing is chosen, document anonymous read behaviour and shareable URL visibility.
-3. Record the discussed FastAPI + SQLAlchemy + PostgreSQL + React/Vite + Docker Compose decisions in accepted ADRs; make migrations consistent with [`database-schema.md`](database-schema.md).
-4. Approved mandatory-field matrix, topic/faculty values, organisations and assigned organiser email–organisation pairs.
-5. Confirm cancelled-event detail visibility (recommended: stable URL with `CANCELLED`, no automatic email), and that subscriptions/notifications remain post-MVP.
-
+1. Office 365 app registration and redirect URL for the NaUKMA tenant (ADR-005).
+2. The organisation register with registered addresses, plus the topic and faculty lists (D-07, A-07). Do not invent them.
+3. An authorised mail transport and sender address for the worker (ADR-007, A-18).
+4. Session lifetime and inactivity-timeout values; retry limits for email delivery.

@@ -2,7 +2,7 @@
 
 - Date: 2026-10-28
 - Status: Product requirement confirmed; FastAPI integration design proposed
-- Context: [team constraints](../team-context.md)
+- Context: [team constraints](../../prompts/4.2_architecture_decisions.md)
 
 ## Selected direction
 

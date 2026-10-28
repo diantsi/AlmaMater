@@ -12,7 +12,7 @@
 
 ## Local Contracts
 
-- Layout: `app/main.py` (FastAPI app; routers mounted under `/api`), `app/config.py` (`Settings` from env, `DATABASE_URL` required), `app/db/` (`base.py` DeclarativeBase, `session.py` engine + `SessionLocal`), one folder per module (`app/health/`; future `auth/`, `organisations/`, `events/`)
+- Layout: `app/main.py` (FastAPI app; routers mounted under `/api`), `app/config.py` (`Settings` from env, `DATABASE_URL` required), `app/db/` (`base.py` DeclarativeBase, `session.py` engine + `SessionLocal`), one folder per module (`app/health/`; future `auth/`, `organisations/`, `events/`, `notifications/` per ADR-003)
 - Each module keeps routes in `router.py` and Pydantic DTOs in `schemas.py`
 - No `__init__.py` files (namespace packages); always use full-path imports such as `from app.health.schemas import HealthResponse`
 - `GET /api/health` is anonymous liveness only and returns `{"status": "ok", "service": "almamater-api"}` (`api-contracts.md` §8); it must not claim to check the DB

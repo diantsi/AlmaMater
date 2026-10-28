@@ -24,7 +24,7 @@ Why: one entry point keeps local commands identical for every team member and ag
 
 ## 3. Targets
 
-Services live in the root `compose.yaml`: `frontend`, `backend`, `db` and `migrate`. The ADR-006 `worker` is not included because notifications are out of the current MVP scope (`api-contracts.md` §1). Only `frontend` is published on localhost (`FRONTEND_PORT`, default 5173). `backend` and `db` stay on the internal Compose network, and the browser reaches the API through the Vite `/api` proxy. Targets that need configuration depend on `.env`, which is copied from `.env.example` when missing.
+Services live in the root `compose.yaml`: `frontend`, `backend`, `db` and `migrate`. The ADR-006 `worker` (notification outbox sender, US-45b/c) is in the MVP but not yet in Compose: the walking skeleton has no business logic, so the service is added together with the notifications module. Only `frontend` is published on localhost (`FRONTEND_PORT`, default 5173). `backend` and `db` stay on the internal Compose network, and the browser reaches the API through the Vite `/api` proxy. Targets that need configuration depend on `.env`, which is copied from `.env.example` when missing.
 
 | Target | Action | Status |
 |---|---|---|

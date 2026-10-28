@@ -2,7 +2,7 @@
 
 - Date: 2026-10-28
 - Status: Implementation proposal for confirmed notification scope
-- Context: [team constraints](../team-context.md)
+- Context: [team constraints](../../prompts/4.2_architecture_decisions.md)
 
 ## Selected implementation direction
 

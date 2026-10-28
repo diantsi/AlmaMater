@@ -3,6 +3,12 @@
 - DOX is highly performant AGENTS.md hierarchy installed here
 - Agent must follow DOX instructions across any edits
 
+## Project
+
+- AlmaMater is a members-only event catalog for NaUKMA. Student organisations publish structured events through their registered Office 365 address. Signed-in students browse and filter them, follow an external participation route, and can subscribe to change and cancellation emails
+- Stack: React + Vite (JavaScript) → FastAPI + SQLAlchemy + Alembic → PostgreSQL, run locally with Docker Compose (ADR-001…007)
+- Current state: walking skeleton only (placeholder homepage, `GET /api/health`, DB connection, empty migration `0001`); no business features yet
+
 ## Core Contract
 
 - AGENTS.md files are binding work contracts for their subtrees
@@ -83,6 +89,28 @@ Current repo-wide rules:
 - If needed DTO model - create pydantic schema in separate schemas.py file related to working module
 - Never add anything to `__init__.py`. Use full-path imports.
 - Run executive commands (servers, Docker, migrations, tests, linters) only via `make` targets in the root `Makefile`; if a target is missing, add it first. Conventions and target list: `docs/commands.md`
+
+## Quick Commands
+
+Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/commands.md`.
+
+- `make up`: build and start `frontend`, `backend`, `db`, `migrate` (creates `.env` from `.env.example`); UI at http://localhost:5173
+- `make check`: all verification (`make test` backend pytest + `make smoke` proxy call to `/api/health`); stack must be up
+- `make test args="-k health"`: backend tests only
+- `make migrate` / `make migration name=<slug>`: apply / create Alembic migrations
+- `make logs service=<name>`, `make down`, `make help`
+
+## Engineering Prohibitions
+
+- Do not invent entity fields, enum values, routes, status codes or error codes; take them from `docs/api-contracts.md` and `docs/database-schema.md`. If a contract is missing or conflicts with requirements, stop and report it
+- Do not invent seed data (organisations, registered addresses, topics, faculties)
+- Do not implement features outside the MVP scope in `docs/requirements.md` (no drafts, moderation, RSVP, reminders, social posting)
+- Do not enforce authorisation only in the UI; the backend checks session and organisation on every request. Never trust a client-supplied organisation, email or role
+- Do not expose event data without a member session; only `auth/login`, `auth/callback` and `health` are anonymous
+- Do not run `docker`, `uvicorn`, `alembic`, `npm` or `pytest` directly; use `make`
+- Do not add code to `__init__.py` or create them; use full-path imports
+- Do not commit `.env`, secrets or real credentials; do not add paid external services
+- Do not change one contract file without the other (`api-contracts.md` ↔ `database-schema.md`)
 
 ## Project Docs
 

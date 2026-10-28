@@ -2,7 +2,7 @@
 
 - Date: 2026-10-28
 - Status: Selected by the requester
-- Context: [team constraints](../team-context.md)
+- Context: [team constraints](../../prompts/4.2_architecture_decisions.md)
 
 ## Selected decision
 
