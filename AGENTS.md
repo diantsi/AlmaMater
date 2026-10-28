@@ -105,3 +105,33 @@ Owned by root (no child AGENTS.md):
 - `raw_research_output/adr/` — ADR-001…007 (repo structure, UI, backend, data storage, auth, local runtime, event notifications)
 - `raw_research_output/p2/`, `raw_research_output/p3/` — historical practice outputs (audience analysis, VPC, critical analysis, user journey, story map, scope, MVP refinement, acceptance criteria)
 - `prompts/` — prompts used to produce practice outputs 2.1–4.4 (4.4 = agent harness: DOX + docs indexing, Makefile)
+
+## Walking Skeleton Contract
+
+The initial application skeleton must establish a working connection between the frontend, backend, and database without implementing business features.
+
+### Required components
+- Frontend application with a placeholder homepage showing the project name and planned MVP screens.
+- Backend application exposing `GET /api/health` with HTTP 200 on success.
+- Database connection configured and verified through an initial migration or connection check.
+- Root `Makefile` providing commands for local startup, shutdown, migrations, and verification.
+- Root `README.md` documenting startup in no more than two commands.
+
+### Implementation rules
+- Follow approved ADRs in `raw_research_output/adr/`.
+- Read the applicable documents in `docs/` before creating models, schemas, or API endpoints.
+- Do not implement business logic, authentication flows, or CRUD operations unless explicitly required for skeleton verification.
+- Do not invent entity fields or API contracts.
+- Keep the skeleton minimal and suitable for local development.
+- Use only root Makefile targets to execute servers, Docker, migrations, tests, and linters.
+- Do not introduce paid external services.
+- Do not commit secrets or local environment files.
+- Update the applicable DOX documentation after structural changes.
+
+### Acceptance criteria
+- Frontend starts and renders the placeholder homepage.
+- Backend starts and responds to `GET /api/health`.
+- Database connection succeeds.
+- Frontend successfully communicates with the backend.
+- The complete application starts locally using no more than two documented commands.
+- All required checks can be executed through Makefile targets.
