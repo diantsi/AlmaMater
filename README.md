@@ -14,6 +14,18 @@ Students who want to integrate into university life, gain practical experience, 
 # Solution
 AlmaMater aims to provide a reliable, centralized catalog where NaUKMA students can discover and evaluate university events, activities, and opportunities. Student organizations publish structured listings, while students use topic and faculty filters to find relevant options and continue through an external registration form, direct organizer contact, or open attendance. The MVP focuses on the discovery and evaluation stages rather than attempting to guarantee attendance, belonging, skill development, or other long-term outcomes.
 
+# Run locally
+Prerequisites: Docker with Compose v2, and GNU `make`.
+
+```sh
+make up      # creates .env from .env.example if missing, builds and starts frontend, backend, db, migrate
+make check   # runs backend tests (health, DB connection, migration) and the frontend -> /api/health smoke check
+```
+
+Open http://localhost:5173. The page should show "Backend reachable: almamater-api — ok". Stop the stack with `make down`. `make help` lists all targets; see `docs/commands.md`.
+
+The current build is the Practice 4 walking skeleton. It has a placeholder homepage, `GET /api/health`, a PostgreSQL connection and an empty initial migration. No business features are implemented yet.
+
 # Users 
 The platform is designed for:
 • Students looking for relevant university events, communities, and a clear way to participate in campus life

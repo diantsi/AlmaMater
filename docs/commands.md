@@ -24,21 +24,24 @@ Why: one entry point keeps local commands identical for every team member and ag
 
 ## 3. Targets
 
-**Status:** the `Makefile` is currently empty and no `compose.yaml` exists. The targets below are the planned set derived from ADR-006; mark each as implemented when it is added.
+Services live in the root `compose.yaml`: `frontend`, `backend`, `db` and `migrate`. The ADR-006 `worker` is not included because notifications are out of the current MVP scope (`api-contracts.md` §1). Only `frontend` is published on localhost (`FRONTEND_PORT`, default 5173). `backend` and `db` stay on the internal Compose network, and the browser reaches the API through the Vite `/api` proxy. Targets that need configuration depend on `.env`, which is copied from `.env.example` when missing.
 
 | Target | Action | Status |
 |---|---|---|
-| `help` | List available targets | planned |
-| `up` | Build and start the full stack (`frontend`, `backend`, `db`, `migrate`, `worker`) | planned |
-| `down` | Stop the stack, keep the DB volume | planned |
-| `restart` | `down` + `up` | planned |
-| `logs` | Follow logs; `service=<name>` to filter | planned |
-| `ps` | Show service status | planned |
-| `backend-shell` | Shell inside the `backend` container | planned |
-| `migrate` | Run `alembic upgrade head` via the `migrate` job | planned |
-| `migration` | Create an Alembic revision; requires `name=<slug>` | planned |
-| `test` | Run backend tests; `args=` passed through | planned |
-| `lint` | Run linters for backend and frontend | planned |
-| `format` | Run formatters | planned |
-| `db-shell` | Open `psql` in the `db` container | planned |
-| `db-reset` | **Destructive:** drop the DB volume and re-run migrations | planned |
+| `help` | List available targets (default goal) | implemented |
+| `up` | Build and start the stack (`frontend`, `backend`, `db`, `migrate`) detached | implemented |
+| `down` | Stop the stack, keep the DB volume | implemented |
+| `restart` | `down` + `up` | implemented |
+| `logs` | Follow logs; `service=<name>` to filter | implemented |
+| `ps` | Show service status, including the exited `migrate` job | implemented |
+| `backend-shell` | Shell inside the `backend` container | implemented |
+| `migrate` | Run `alembic upgrade head` via the `migrate` job | implemented |
+| `migration` | Create an Alembic revision (autogenerate); requires `name=<slug>` | implemented |
+| `test` | Run backend pytest against PostgreSQL; `args=` passed through | implemented |
+| `smoke` | Call `/api/health` through the frontend proxy; stack must be up | implemented |
+| `check` | `test` + `smoke`: all walking-skeleton checks | implemented |
+| `frontend-lock` | Regenerate `frontend/package-lock.json` inside the container | implemented |
+| `lint` | Run linters for backend and frontend | planned (no linter chosen yet) |
+| `format` | Run formatters | planned (no formatter chosen yet) |
+| `db-shell` | Open `psql` in the `db` container | implemented |
+| `db-reset` | **Destructive:** drop the DB volume and re-run migrations | implemented |

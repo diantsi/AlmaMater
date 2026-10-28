@@ -96,15 +96,19 @@ Current repo-wide rules:
 ## Child DOX Index
 
 - `docs/AGENTS.md` — requirements, user stories, requirement analysis, API contract, data model; when and how to read and maintain them
+- `backend/AGENTS.md` — FastAPI app, SQLAlchemy/DB setup, Alembic migrations, pytest
+- `frontend/AGENTS.md` — React + Vite client, `/api` proxy, placeholder homepage
 
 Owned by root (no child AGENTS.md):
 
-- `README.md` — team, problem, solution, personas, value proposition, critical analysis
+- `README.md` — team, problem, solution, personas, value proposition, critical analysis, "Run locally"
 - `CLAUDE.md` — pointer to this file
 - `Makefile` — single entry point for executive commands (see `docs/commands.md`)
+- `compose.yaml` — local stack (`frontend`, `backend`, `db`, `migrate`); service layout documented in `docs/commands.md` §3
+- `.env.example` — local-only placeholder config; `make up` copies it to the git-ignored `.env`
 - `raw_research_output/adr/` — ADR-001…007 (repo structure, UI, backend, data storage, auth, local runtime, event notifications)
 - `raw_research_output/p2/`, `raw_research_output/p3/` — historical practice outputs (audience analysis, VPC, critical analysis, user journey, story map, scope, MVP refinement, acceptance criteria)
-- `prompts/` — prompts used to produce practice outputs 2.1–4.4 (4.4 = agent harness: DOX + docs indexing, Makefile)
+- `prompts/` — prompts used to produce practice outputs 2.1–4.4 (4.4 = agent harness: DOX + docs indexing, Makefile) and `4.5_scaffolding_skeleton.md` (walking skeleton)
 
 ## Walking Skeleton Contract
 
@@ -135,3 +139,6 @@ The initial application skeleton must establish a working connection between the
 - Frontend successfully communicates with the backend.
 - The complete application starts locally using no more than two documented commands.
 - All required checks can be executed through Makefile targets.
+
+### Verification
+- `make up`, then `make check`: backend pytest (health, DB `SELECT 1`, Alembic revision `0001`) plus the frontend proxy smoke call to `/api/health`
