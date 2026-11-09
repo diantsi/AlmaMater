@@ -432,7 +432,7 @@ Guarantees:
 { "status": "ok", "service": "almamater-api" }
 ```
 
-The route is anonymous and proves the UI–API connection. Database connectivity is verified separately by the skeleton tests (`SELECT 1`, Alembic revision `0001`). The health route does not check the database.
+The route is anonymous and proves the UI–API connection. Database connectivity is verified separately by the skeleton tests (`SELECT 1`, Alembic head revision). The health route does not check the database.
 
 ## 9. Acceptance/contract test checklist (for implementation)
 

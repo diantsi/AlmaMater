@@ -30,9 +30,9 @@ backend-shell: ## Shell inside the backend container
 migrate: .env ## Run alembic upgrade head via the migrate job
 	$(COMPOSE) run --rm migrate
 
-migration: .env ## Create an Alembic revision; requires name=<slug>
-	@test -n "$(name)" || (echo "usage: make migration name=<slug>" && exit 1)
-	$(COMPOSE) run --rm backend alembic revision --autogenerate -m "$(name)"
+migration: .env ## Create an Alembic revision; requires name=<slug>, optional rev=<id>
+	@test -n "$(name)" || (echo "usage: make migration name=<slug> [rev=<id>]" && exit 1)
+	$(COMPOSE) run --rm backend alembic revision --autogenerate -m "$(name)" $(if $(rev),--rev-id "$(rev)")
 
 test: .env ## Run backend tests against PostgreSQL; args= passed to pytest
 	$(COMPOSE) run --rm backend pytest $(args)

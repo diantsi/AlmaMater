@@ -7,7 +7,7 @@
 
 - AlmaMater is a members-only event catalog for NaUKMA. Student organisations publish structured events through their registered Office 365 address. Signed-in students browse and filter them, follow an external participation route, and can subscribe to change and cancellation emails
 - Stack: React + Vite (JavaScript) → FastAPI + SQLAlchemy + Alembic → PostgreSQL, run locally with Docker Compose (ADR-001…007)
-- Current state: walking skeleton only (placeholder homepage, `GET /api/health`, DB connection, empty migration `0001`); no business features yet
+- Current state: walking skeleton (placeholder homepage, `GET /api/health`) plus a read-only, unauthenticated catalog API for organisations, topics, faculties and events (migration `0002`); deviations from the contracts are listed in `backend/AGENTS.md`
 
 ## Core Contract
 
@@ -94,10 +94,10 @@ Current repo-wide rules:
 
 Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/commands.md`.
 
-- `make up`: build and start `frontend`, `backend`, `db`, `migrate` (creates `.env` from `.env.example`); UI at http://localhost:5173
+- `make up`: build and start `frontend`, `backend`, `db`, `migrate` (creates `.env` from `.env.example`); UI at http://localhost:5173, API docs at http://localhost:8000/docs
 - `make check`: all verification (`make test` backend pytest + `make smoke` proxy call to `/api/health`); stack must be up
 - `make test args="-k health"`: backend tests only
-- `make migrate` / `make migration name=<slug>`: apply / create Alembic migrations
+- `make migrate` / `make migration name=<slug> rev=<id>`: apply / create Alembic migrations
 - `make logs service=<name>`, `make down`, `make help`
 
 ## Engineering Prohibitions
@@ -124,7 +124,7 @@ Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/co
 ## Child DOX Index
 
 - `docs/AGENTS.md` — requirements, user stories, requirement analysis, API contract, data model; when and how to read and maintain them
-- `backend/AGENTS.md` — FastAPI app, SQLAlchemy/DB setup, Alembic migrations, pytest
+- `backend/AGENTS.md` — FastAPI app, catalog modules, SQLAlchemy/DB setup, Alembic migrations, pytest, temporary contract deviations
 - `frontend/AGENTS.md` — React + Vite client, `/api` proxy, placeholder homepage
 
 Owned by root (no child AGENTS.md):
@@ -133,7 +133,7 @@ Owned by root (no child AGENTS.md):
 - `CLAUDE.md` — pointer to this file
 - `Makefile` — single entry point for executive commands (see `docs/commands.md`)
 - `compose.yaml` — local stack (`frontend`, `backend`, `db`, `migrate`); service layout documented in `docs/commands.md` §3
-- `.env.example` — local-only placeholder config; `make up` copies it to the git-ignored `.env`
+- `.env.example` — local-only placeholder config (Postgres, `DB_PORT`, `FRONTEND_PORT`, `BACKEND_PORT`); `make up` copies it to the git-ignored `.env` only when `.env` is missing, so add new keys to an existing `.env` by hand
 - `raw_research_output/adr/` — ADR-001…007 (repo structure, UI, backend, data storage, auth, local runtime, event notifications)
 - `raw_research_output/p2/`, `raw_research_output/p3/` — historical practice outputs (audience analysis, VPC, critical analysis, user journey, story map, scope, MVP refinement, acceptance criteria)
 - `prompts/` — prompts used to produce practice outputs 2.1–4.4 (4.4 = agent harness: DOX + docs indexing, Makefile) and `4.5_scaffolding_skeleton.md` (walking skeleton)
@@ -169,4 +169,4 @@ The initial application skeleton must establish a working connection between the
 - All required checks can be executed through Makefile targets.
 
 ### Verification
-- `make up`, then `make check`: backend pytest (health, DB `SELECT 1`, Alembic revision `0001`) plus the frontend proxy smoke call to `/api/health`
+- `make up`, then `make check`: backend pytest (health, DB `SELECT 1`, Alembic head revision, catalog endpoints) plus the frontend proxy smoke call to `/api/health`
