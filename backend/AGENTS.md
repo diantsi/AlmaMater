@@ -7,7 +7,7 @@
 
 ## Ownership
 
-- Owns everything under `backend/`: `app/`, `alembic/`, `alembic.ini`, `tests/`, `pyproject.toml`, `Dockerfile`
+- Owns everything under `backend/`: `app/`, `alembic/`, `seed/`, `alembic.ini`, `tests/`, `pyproject.toml`, `Dockerfile`
 - API and data contracts are owned by `docs/` (`api-contracts.md`, `database-schema.md`); this folder implements them
 
 ## Local Contracts
@@ -17,12 +17,15 @@
   - `app/organisations/` — `Organization` model, `GET /api/organizations`
   - `app/dictionaries/` — `Topic`, `Faculty` models, `GET /api/topics`, `GET /api/faculties`
   - `app/events/` — `Event` model + status/format/method `StrEnum`s, `GET /api/events` (§6.1 filters), `GET /api/events/{eventId}`
+  - `app/seed/` — `seeder.py` (CLI behind `make seed`) + `schemas.py` (`SeedFile` validation); no routes
   - future `auth/`, `notifications/`
 - Each module keeps SQLAlchemy models in `models.py`, routes in `router.py` and Pydantic DTOs in `schemas.py`
 - `app/schemas.py`: `ApiModel` base (camelCase aliases, `from_attributes`) and `UtcDateTime` (serialises as UTC `…Z`); all response DTOs use them
 - `app/errors.py`: `ApiError` + handlers producing the `api-contracts.md` §7 envelope; request validation errors map to `400 MALFORMED_REQUEST`, unhandled ones to `500 INTERNAL_ERROR`
 - DB CHECK constraints are named `ck_<table>_<rule>`; enum values live only in `app/events/models.py`
-- No seed data: dictionaries and organisations stay empty until the team supplies them
+- Seed data: `make seed [file=<path>]` upserts organisations (by `slug`), topics and faculties (by `code`) and events (by explicit `id`) from `seed/data.json` (path relative to `backend/`) in one transaction; rows absent from the file are never deleted
+- Seed validation (`app/seed/schemas.py`): emails lowercased; duplicate keys and unknown fields rejected; events reference `organization` slug / `topic` code / `faculty` code (unknown refs abort the run) and must satisfy `database-schema.md` §3.5 conditional constraints 1–4, 6, 7 (future `starts_at` is not required). Re-seeding an event keeps `published_at` and `revision`, sets `updated_at` to now
+- `seed/data.json` holds only team-supplied real values and does not exist until they arrive; `seed/data.example.json` holds fake dev data (3 rows per table, `Example`/`example.test` names) for `make seed file=seed/data.example.json` and must never be treated as real data
 - No `__init__.py` files (namespace packages); always use full-path imports such as `from app.health.schemas import HealthResponse`
 - `GET /api/health` is anonymous liveness only and returns `{"status": "ok", "service": "almamater-api"}` (`api-contracts.md` §8); it must not claim to check the DB
 - Migrations live in `alembic/versions/` named `<rev>_<slug>.py`; `0001_initial` is the empty baseline, `0002_catalog_tables` creates `organizations`, `topics`, `faculties`, `events`. New model modules must be imported in `alembic/env.py` before autogenerating (`make migration name=<slug> rev=<id>`)
@@ -45,6 +48,7 @@
 - `make test` runs pytest against the Compose PostgreSQL (DB must be migrated to head):
   - `tests/conftest.py` — `db` fixture (outer transaction rolled back per test), `client` fixture (overrides `get_db`), `make_*` factories for test-only rows
   - `tests/test_health.py` (health contract), `tests/test_db.py` (`SELECT 1`, `alembic_version == "0002"`)
+  - `tests/test_seed.py` (upsert, idempotency, event ref resolution, seed file validation, example file validity)
   - `tests/test_organisations.py`, `tests/test_dictionaries.py`, `tests/test_events.py` (filters, Kyiv date range, lifecycle visibility, error envelope)
 
 ## Child DOX Index

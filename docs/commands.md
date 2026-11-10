@@ -37,6 +37,7 @@ Services live in the root `compose.yaml`: `frontend`, `backend`, `db` and `migra
 | `backend-shell` | Shell inside the `backend` container | implemented |
 | `migrate` | Run `alembic upgrade head` via the `migrate` job | implemented |
 | `migration` | Create an Alembic revision (autogenerate); requires `name=<slug>`, optional `rev=<id>` (e.g. `0003`) for the `<rev>_<slug>` naming | implemented |
+| `seed` | Upsert organisations, topics, faculties, events from `backend/seed/data.json`; `file=<path>` (relative to `backend/`) overrides | implemented |
 | `test` | Run backend pytest against PostgreSQL; `args=` passed through | implemented |
 | `smoke` | Call `/api/health` through the frontend proxy; stack must be up | implemented |
 | `check` | `test` + `smoke`: all walking-skeleton checks | implemented |

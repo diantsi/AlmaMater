@@ -98,6 +98,7 @@ Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/co
 - `make check`: all verification (`make test` backend pytest + `make smoke` proxy call to `/api/health`); stack must be up
 - `make test args="-k health"`: backend tests only
 - `make migrate` / `make migration name=<slug> rev=<id>`: apply / create Alembic migrations
+- `make seed [file=<path>]`: upsert seed data from `backend/seed/data.json`; `file=seed/data.example.json` loads fake dev data
 - `make logs service=<name>`, `make down`, `make help`
 
 ## Engineering Prohibitions
@@ -124,7 +125,7 @@ Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/co
 ## Child DOX Index
 
 - `docs/AGENTS.md` — requirements, user stories, requirement analysis, API contract, data model; when and how to read and maintain them
-- `backend/AGENTS.md` — FastAPI app, catalog modules, SQLAlchemy/DB setup, Alembic migrations, pytest, temporary contract deviations
+- `backend/AGENTS.md` — FastAPI app, catalog modules, SQLAlchemy/DB setup, Alembic migrations, seeder, pytest, temporary contract deviations
 - `frontend/AGENTS.md` — React + Vite client, `/api` proxy, placeholder homepage
 
 Owned by root (no child AGENTS.md):
