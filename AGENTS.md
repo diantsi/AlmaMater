@@ -7,7 +7,7 @@
 
 - AlmaMater is a members-only event catalog for NaUKMA. Student organisations publish structured events through their registered Office 365 address. Signed-in students browse and filter them, follow an external participation route, and can subscribe to change and cancellation emails
 - Stack: React + Vite (JavaScript) → FastAPI + SQLAlchemy + Alembic → PostgreSQL, run locally with Docker Compose (ADR-001…007)
-- Current state: walking skeleton (placeholder homepage, `GET /api/health`) plus a read-only, unauthenticated catalog API for organisations, topics, faculties and events (migration `0002`); deviations from the contracts are listed in `backend/AGENTS.md`
+- Current state: walking skeleton (placeholder homepage, `GET /api/health`) plus an unauthenticated catalog API for organisations, topics, faculties and events (migration `0002`), including event create/update (`POST`/`PATCH /api/events`); deviations from the contracts are listed in `backend/AGENTS.md`
 
 ## Core Contract
 
@@ -125,7 +125,7 @@ Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/co
 ## Child DOX Index
 
 - `docs/AGENTS.md` — requirements, user stories, requirement analysis, API contract, data model; when and how to read and maintain them
-- `backend/AGENTS.md` — FastAPI app, catalog modules, SQLAlchemy/DB setup, Alembic migrations, seeder, pytest, temporary contract deviations
+- `backend/AGENTS.md` — FastAPI app, catalog modules and event create/update, SQLAlchemy/DB setup, Alembic migrations, seeder, pytest, temporary contract deviations
 - `frontend/AGENTS.md` — React + Vite client, `/api` proxy, placeholder homepage
 
 Owned by root (no child AGENTS.md):
@@ -170,4 +170,4 @@ The initial application skeleton must establish a working connection between the
 - All required checks can be executed through Makefile targets.
 
 ### Verification
-- `make up`, then `make check`: backend pytest (health, DB `SELECT 1`, Alembic head revision, catalog endpoints) plus the frontend proxy smoke call to `/api/health`
+- `make up`, then `make check`: backend pytest (health, DB `SELECT 1`, Alembic head revision, catalog and event create/update endpoints) plus the frontend proxy smoke call to `/api/health`

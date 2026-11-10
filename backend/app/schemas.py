@@ -17,3 +17,9 @@ class ApiModel(BaseModel):
     """Base for response DTOs: camelCase JSON, built from ORM objects."""
 
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, from_attributes=True)
+
+
+class ApiRequest(BaseModel):
+    """Base for request DTOs: camelCase JSON only; unknown or immutable keys are rejected (400)."""
+
+    model_config = ConfigDict(alias_generator=to_camel, extra="forbid")

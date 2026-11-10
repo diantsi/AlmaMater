@@ -3,7 +3,7 @@
 ## Purpose
 
 - Python + FastAPI API with SQLAlchemy persistence and Alembic migrations (ADR-003, ADR-004)
-- Current state: walking skeleton plus read-only catalog API (`organizations`, `topics`, `faculties`, `events`); no auth, users, mutations or notifications yet
+- Current state: walking skeleton plus catalog API (`organizations`, `topics`, `faculties`, `events`) with event create/update; no auth, users, cancellation, subscriptions or notifications yet
 
 ## Ownership
 
@@ -16,11 +16,12 @@
   - `app/health/` — `GET /api/health`
   - `app/organisations/` — `Organization` model, `GET /api/organizations`
   - `app/dictionaries/` — `Topic`, `Faculty` models, `GET /api/topics`, `GET /api/faculties`
-  - `app/events/` — `Event` model + status/format/method `StrEnum`s, `GET /api/events` (§6.1 filters), `GET /api/events/{eventId}`
+  - `app/events/` — `Event` model + status/format/method `StrEnum`s, `GET /api/events` (§6.1 filters), `GET /api/events/{eventId}`, `POST /api/events` (§6.3), `PATCH /api/events/{eventId}` (§6.4); write logic in `service.py`
   - `app/seed/` — `seeder.py` (CLI behind `make seed`) + `schemas.py` (`SeedFile` validation); no routes
   - future `auth/`, `notifications/`
-- Each module keeps SQLAlchemy models in `models.py`, routes in `router.py` and Pydantic DTOs in `schemas.py`
-- `app/schemas.py`: `ApiModel` base (camelCase aliases, `from_attributes`) and `UtcDateTime` (serialises as UTC `…Z`); all response DTOs use them
+- Each module keeps SQLAlchemy models in `models.py`, routes in `router.py` and Pydantic DTOs in `schemas.py`; write/business logic goes in an optional `service.py`, routers stay thin
+- `app/schemas.py`: `ApiModel` base (camelCase aliases, `from_attributes`) and `UtcDateTime` (serialises as UTC `…Z`) for all response DTOs; `ApiRequest` base (camelCase only, `extra="forbid"`) for request DTOs
+- Event mutations: request DTOs check syntax/types only (strict types, offset-aware date-times); failures are `400 MALFORMED_REQUEST` via `service.parse_body`. `service.validate_event` then checks the complete (merged) event against `database-schema.md` §3.5 rules 1–3, 5–7 and returns every violation in one `422 VALIDATION_ERROR`. Text is trimmed before validation and storage. PATCH order: no editable field `400` → `404` → cancelled/past `409 EVENT_NOT_EDITABLE` → stale `revision` `409 EVENT_REVISION_CONFLICT` → `422`; the row is locked `FOR UPDATE`; an edit with no effective change keeps `revision` and `updated_at`
 - `app/errors.py`: `ApiError` + handlers producing the `api-contracts.md` §7 envelope; request validation errors map to `400 MALFORMED_REQUEST`, unhandled ones to `500 INTERNAL_ERROR`
 - DB CHECK constraints are named `ck_<table>_<rule>`; enum values live only in `app/events/models.py`
 - Seed data: `make seed [file=<path>]` upserts organisations (by `slug`), topics and faculties (by `code`) and events (by explicit `id`) from `seed/data.json` (path relative to `backend/`) in one transaction; rows absent from the file are never deleted
@@ -38,7 +39,9 @@
 `docs/api-contracts.md` and `docs/database-schema.md` remain the target; these gaps are intentional until auth lands and must be removed then:
 
 - No `users` / `sessions` tables; `events` has no `created_by_user_id` or `cancelled_by_user_id`, and `ck_events_cancellation` checks only `cancelled_at`
-- All catalog routes are anonymous (no `401 NOT_AUTHENTICATED`)
+- All catalog routes, including `POST`/`PATCH /api/events`, are anonymous: no `401 NOT_AUTHENTICATED`, no `403 ORGANIZATION_ACCESS_DENIED` ownership check, no CSRF check
+- `POST /api/events` takes the owning organisation from a temporary `organizationId` body field (must exist, else `422`) instead of the session; `PATCH` rejects it (`400`)
+- `PATCH /api/events/{eventId}` writes no `CHANGED` notification deliveries (no `event_subscriptions` / `notification_deliveries` tables yet); `POST /api/events/{eventId}/cancel` is not implemented
 - `EventDetailResponse.canManage` and `subscribed` are always `false`
 
 ## Work Guidance
@@ -50,6 +53,7 @@
   - `tests/test_health.py` (health contract), `tests/test_db.py` (`SELECT 1`, `alembic_version == "0002"`)
   - `tests/test_seed.py` (upsert, idempotency, event ref resolution, seed file validation, example file validity)
   - `tests/test_organisations.py`, `tests/test_dictionaries.py`, `tests/test_events.py` (filters, Kyiv date range, lifecycle visibility, error envelope)
+  - `tests/test_events_write.py` (create/update: 201 + `Location`, all-errors-at-once 422, conditional fields, 400 for unknown/immutable fields and bad syntax, revision bump, no-op edit, 409 stale revision / not editable, 404)
 
 ## Child DOX Index
 

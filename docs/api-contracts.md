@@ -1,7 +1,7 @@
 # AlmaMater — MVP HTTP API Contract
 
 **Practice:** 4.3 — Technical contracts  
-**Status:** MVP contract aligned with the requirements digest (D-01…D-10, A-01…A-18); only `GET /api/health` is implemented (walking skeleton)  
+**Status:** MVP contract aligned with the requirements digest (D-01…D-10, A-01…A-18); implemented so far: `GET /api/health`, the catalog reads, `POST /api/events` and `PATCH /api/events/{eventId}` (without auth; see `backend/AGENTS.md` deviations)  
 **Date:** 2026-10-28  
 **Related:** [`database-schema.md`](database-schema.md), [`requirements.md`](requirements.md), [`analysis/requirements-digest.md`](analysis/requirements-digest.md), [`user-stories/`](user-stories/), ADRs in [`../raw_research_output/adr/`](../raw_research_output/adr/)
 
