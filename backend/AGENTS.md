@@ -48,6 +48,7 @@
 
 ## Verification
 
+- `make backend-lint` runs Ruff with the rules configured in `pyproject.toml` (`E4`, `E7`, `E9`, `F`, `I`); `make backend-lint args=--fix` applies automatic fixes, which must be reviewed before committing.
 - `make test` runs pytest against the Compose PostgreSQL (DB must be migrated to head):
   - `tests/conftest.py` — `db` fixture (outer transaction rolled back per test), `client` fixture (overrides `get_db`), `make_*` factories for test-only rows
   - `tests/test_health.py` (health contract), `tests/test_db.py` (`SELECT 1`, `alembic_version == "0002"`)

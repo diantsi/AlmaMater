@@ -2,7 +2,7 @@ COMPOSE := docker compose
 
 .DEFAULT_GOAL := help
 
-.PHONY: help up down restart logs ps backend-shell migrate migration seed test smoke frontend-build check frontend-lock db-shell db-reset
+.PHONY: help up down restart logs ps backend-shell migrate migration seed test smoke frontend-build check frontend-lock db-shell db-reset backend-lint frontend-lint frontend-typecheck
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-15s %s\n", $$1, $$2}'
@@ -40,6 +40,15 @@ seed: .env ## Upsert team-supplied reference data; optional file=<path> (default
 test: .env ## Run backend tests against PostgreSQL; args= passed to pytest
 	$(COMPOSE) run --rm backend pytest $(args)
 
+backend-lint: .env ## Check backend Python code with Ruff
+	$(COMPOSE) run --rm --build --no-deps backend ruff check . $(args)
+
+frontend-lint: .env ## Check frontend JavaScript and React with ESLint
+	$(COMPOSE) run --rm --build --no-deps frontend npm run lint
+
+frontend-typecheck: .env ## Check frontend JavaScript types
+	$(COMPOSE) run --rm --build --no-deps frontend npm run typecheck
+
 smoke: ## Call /api/health through the frontend proxy (stack must be up)
 	$(COMPOSE) exec frontend wget -qO- http://127.0.0.1:5173/api/health
 	@echo
@@ -47,7 +56,7 @@ smoke: ## Call /api/health through the frontend proxy (stack must be up)
 frontend-build: .env ## Build the frontend bundle (rebuilds the image; output discarded)
 	$(COMPOSE) run --rm --build --no-deps frontend npm run build -- --outDir /tmp/dist --emptyOutDir
 
-check: test smoke frontend-build ## Run all checks
+check: backend-lint frontend-lint frontend-typecheck test smoke frontend-build ## Run all guardrails, tests and build
 
 # Empties the container-only node_modules first so the lock lists every platform's optional binaries (npm/cli#4828)
 frontend-lock: .env ## Regenerate frontend/package-lock.json

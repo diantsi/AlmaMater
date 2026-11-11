@@ -11,7 +11,11 @@ from sqlalchemy.orm import Session
 from app.dictionaries.models import Faculty, Topic
 from app.errors import ApiError, ErrorDetail
 from app.events.models import Event, EventFormat, EventStatus, ParticipationMethod
-from app.events.schemas import EventCreateRequest, EventFieldsRequest, EventUpdateRequest
+from app.events.schemas import (
+    EventCreateRequest,
+    EventFieldsRequest,
+    EventUpdateRequest,
+)
 from app.organisations.models import Organization
 
 RequestModel = TypeVar("RequestModel", bound=BaseModel)
