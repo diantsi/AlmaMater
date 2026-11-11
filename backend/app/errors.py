@@ -26,8 +26,14 @@ class ApiError(Exception):
         self.details = details or []
 
 
-def _envelope(status_code: int, code: str, message: str, details: list[ErrorDetail]) -> JSONResponse:
-    request_id = f"req-{secrets.token_hex(6)}"
+def _new_request_id() -> str:
+    return f"req-{secrets.token_hex(6)}"
+
+
+def _envelope(
+    status_code: int, code: str, message: str, details: list[ErrorDetail], request_id: str | None = None
+) -> JSONResponse:
+    request_id = request_id or _new_request_id()
     logger.info("api error %s %s requestId=%s", status_code, code, request_id)
     timestamp = datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     return JSONResponse(
@@ -58,8 +64,9 @@ async def _request_validation_handler(_: Request, exc: RequestValidationError) -
 
 
 async def _unhandled_error_handler(_: Request, exc: Exception) -> JSONResponse:
-    logger.exception("unhandled error", exc_info=exc)
-    return _envelope(500, "INTERNAL_ERROR", "Unexpected server error.", [])
+    request_id = _new_request_id()
+    logger.error("unhandled error requestId=%s", request_id, exc_info=exc)
+    return _envelope(500, "INTERNAL_ERROR", "Unexpected server error.", [], request_id)
 
 
 def register_error_handlers(app: FastAPI) -> None:
