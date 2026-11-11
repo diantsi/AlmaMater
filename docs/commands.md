@@ -30,8 +30,7 @@ names, env files and flags behind stable names.
 ## 3. Targets
 
 Services live in the root `compose.yaml`: `frontend`, `backend`, `db` and `migrate`. The ADR-006 `worker` (notification
-outbox sender, US-45b/c) is in the MVP but not yet in Compose: the walking skeleton has no business logic, so the
-service is added together with the notifications module. `frontend` is published on localhost (`FRONTEND_PORT`, default
+outbox sender, US-45b/c) is in the MVP but not yet in Compose: it is added together with the notifications module. `frontend` is published on localhost (`FRONTEND_PORT`, default
 5173) and the browser app reaches the API through the Vite `/api` proxy. `backend` is also published on `127.0.0.1` only
 (`BACKEND_PORT`, default 8000) for Swagger UI at `/docs` and direct API calls during development. `db` is
 published on `127.0.0.1` only (`DB_PORT`, default 5432) for host DB clients (PyCharm, `psql`); containers still reach it at `db:5432`. Targets that need configuration depend on `.env`, which is copied from `.env.example` when missing.
