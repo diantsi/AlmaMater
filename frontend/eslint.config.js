@@ -12,6 +12,16 @@ export default [
 
     {
         files: ['src/**/*.{js,jsx}'],
+        ...reactPlugin.configs.flat.recommended,
+    },
+
+    {
+        files: ['src/**/*.{js,jsx}'],
+        ...reactPlugin.configs.flat['jsx-runtime'],
+    },
+
+    {
+        files: ['src/**/*.{js,jsx}'],
 
         languageOptions: {
             ecmaVersion: 'latest',
@@ -36,6 +46,8 @@ export default [
         },
 
         rules: {
+            // Props are typed with JSDoc (frontend/AGENTS.md), not prop-types
+            'react/prop-types': 'off',
             'react/jsx-no-undef': 'error',
             'react/jsx-uses-vars': 'error',
             'react-hooks/rules-of-hooks': 'error',

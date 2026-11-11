@@ -32,7 +32,7 @@
 
 ## Verification
 
-- `make frontend-lint` runs ESLint to check JavaScript, JSX and React Hooks rules
+- `make frontend-lint` runs ESLint: JavaScript recommended, `eslint-plugin-react` recommended + `jsx-runtime` (`prop-types` off; props use JSDoc), React Hooks `rules-of-hooks` and `exhaustive-deps`
 - `make frontend-typecheck` runs TypeScript static checking on `src/` without generating output files
 - `make frontend-build` runs the production `vite build` in a fresh container (part of `make check`)
 - `make smoke` fetches `/api/health` through the frontend dev server proxy (stack must be up via `make up`)
