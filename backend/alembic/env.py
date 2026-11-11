@@ -1,15 +1,14 @@
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
-
-from app.config import settings
-from app.db.base import Base
 
 # Model modules must be imported so Base.metadata sees their tables
 import app.dictionaries.models  # noqa: F401,E402
 import app.events.models  # noqa: F401,E402
 import app.organisations.models  # noqa: F401,E402
+from alembic import context
+from app.config import settings
+from app.db.base import Base
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)

@@ -2,7 +2,15 @@ import uuid
 from collections import Counter
 from typing import Annotated
 
-from pydantic import AfterValidator, AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import (
+    AfterValidator,
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    model_validator,
+)
 
 from app.events.models import EventFormat, EventStatus, ParticipationMethod
 
