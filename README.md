@@ -26,6 +26,16 @@ Open http://localhost:5173; it redirects to the `/events` catalog. `make seed fi
 
 The current build is the walking skeleton plus a first slice of the event features: an unauthenticated catalog API with event create/update, an `/events` catalog page and a `/events/new` form that publishes events with the required fields. Sign-in, event details, filters, cancellation and subscriptions are not implemented yet.
 
+## Try the scenario live
+Scenario: an organisation publishes an event and it appears in the catalog.
+
+1. Start the stack and load example data (organisations, topics, faculties): `make up`, then `make seed file=seed/data.example.json`.
+2. Open http://localhost:5173/events/new (or click **Create event** in the header).
+3. Fill in every required field with a future start time, choose a format and participation method, then click **Publish**.
+4. Check the confirmation message, then open **Events**: the new event card shows its title, start time, organisation and format.
+
+To see validation, submit the form with empty fields or a non-`https://` link: errors appear under the inputs and in the summary at the top.
+
 # Users 
 The platform is designed for:
 • Students looking for relevant university events, communities, and a clear way to participate in campus life
