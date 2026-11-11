@@ -16,13 +16,13 @@
   - `app/health/` — `GET /api/health`
   - `app/organisations/` — `Organization` model, `GET /api/organizations`
   - `app/dictionaries/` — `Topic`, `Faculty` models, `GET /api/topics`, `GET /api/faculties`
-  - `app/events/` — `Event` model + status/format/method `StrEnum`s, `GET /api/events` (§6.1 filters), `GET /api/events/{eventId}`, `POST /api/events` (§6.3), `PATCH /api/events/{eventId}` (§6.4); write logic in `service.py`
+  - `app/events/` — `Event` model + status/format/method `StrEnum`s, `GET /api/events` (§6.1 filters), `GET /api/events/{eventId}`, `POST /api/events` (§6.3), `PATCH /api/events/{eventId}` (§6.4); catalog query and write logic in `service.py`
   - `app/seed/` — `seeder.py` (CLI behind `make seed`) + `schemas.py` (`SeedFile` validation); no routes
   - future `auth/`, `notifications/`
 - Each module keeps SQLAlchemy models in `models.py`, routes in `router.py` and Pydantic DTOs in `schemas.py`; write/business logic goes in an optional `service.py`, routers stay thin
 - `app/schemas.py`: `ApiModel` base (camelCase aliases, `from_attributes`) and `UtcDateTime` (serialises as UTC `…Z`) for all response DTOs; `ApiRequest` base (camelCase only, `extra="forbid"`) for request DTOs
 - Event mutations: request DTOs check syntax/types only (strict types, offset-aware date-times); failures are `400 MALFORMED_REQUEST` via `service.parse_body`. `service.validate_event` then checks the complete (merged) event against `database-schema.md` §3.5 rules 1–3, 5–7 and returns every violation in one `422 VALIDATION_ERROR`. Text is trimmed before validation and storage. PATCH order: no editable field `400` → `404` → cancelled/past `409 EVENT_NOT_EDITABLE` → stale `revision` `409 EVENT_REVISION_CONFLICT` → `422`; the row is locked `FOR UPDATE`; an edit with no effective change keeps `revision` and `updated_at`
-- `app/errors.py`: `ApiError` + handlers producing the `api-contracts.md` §7 envelope; request validation errors map to `400 MALFORMED_REQUEST`, unhandled ones to `500 INTERNAL_ERROR`
+- `app/errors.py`: `ApiError` + handlers producing the `api-contracts.md` §7 envelope; request validation errors map to `400 MALFORMED_REQUEST`, unhandled ones to `500 INTERNAL_ERROR`; every error's `requestId` is logged (logging configured at INFO in `app/main.py`), and 500 tracebacks carry it
 - DB CHECK constraints are named `ck_<table>_<rule>`; enum values live only in `app/events/models.py`
 - Seed data: `make seed [file=<path>]` upserts organisations (by `slug`), topics and faculties (by `code`) and events (by explicit `id`) from `seed/data.json` (path relative to `backend/`) in one transaction; rows absent from the file are never deleted
 - Seed validation (`app/seed/schemas.py`): emails lowercased; duplicate keys and unknown fields rejected; events reference `organization` slug / `topic` code / `faculty` code (unknown refs abort the run) and must satisfy `database-schema.md` §3.5 conditional constraints 1–4, 6, 7 (future `starts_at` is not required). Re-seeding an event keeps `published_at` and `revision`, sets `updated_at` to now

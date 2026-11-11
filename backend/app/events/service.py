@@ -1,11 +1,12 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Any, TypeVar
 from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, ValidationError
 from pydantic.alias_generators import to_camel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.dictionaries.models import Faculty, Topic
@@ -17,6 +18,9 @@ from app.organisations.models import Organization
 RequestModel = TypeVar("RequestModel", bound=BaseModel)
 
 EDITABLE_FIELDS = tuple(EventFieldsRequest.model_fields)
+
+# Calendar dates are whole days in Europe/Kyiv (database-schema.md C-06)
+KYIV = ZoneInfo("Europe/Kyiv")
 
 # database-schema.md §3.5 column lengths; None = unbounded TEXT
 REQUIRED_TEXT = {"title": 160, "description": None}
@@ -123,6 +127,42 @@ def validate_event(db: Session, state: dict[str, Any], now: datetime) -> list[Er
     _validate_exclusive(state, "format", LOCATION_FIELDS, add)
     _validate_exclusive(state, "participation_method", METHOD_FIELDS, add)
     return errors
+
+
+def _start_of_day(day: date) -> datetime:
+    return datetime.combine(day, time.min, tzinfo=KYIV)
+
+
+# api-contracts.md §6.1: active upcoming events; OR within a filter, AND between filters
+def list_events(
+    db: Session,
+    topic_ids: list[uuid.UUID] | None,
+    faculty_ids: list[uuid.UUID] | None,
+    organization_ids: list[uuid.UUID] | None,
+    date_from: date | None,
+    date_to: date | None,
+) -> list[Event]:
+    if date_from and date_to and date_from > date_to:
+        raise ApiError(
+            422,
+            "VALIDATION_ERROR",
+            "Filter is invalid.",
+            [ErrorDetail(field="dateTo", message="End date must not be before start date.")],
+        )
+
+    query = select(Event).where(Event.status == EventStatus.PUBLISHED, Event.starts_at > func.now())
+    if topic_ids:
+        query = query.where(Event.topic_id.in_(topic_ids))
+    if faculty_ids:
+        query = query.where(Event.faculty_id.in_(faculty_ids))
+    if organization_ids:
+        query = query.where(Event.organization_id.in_(organization_ids))
+    if date_from:
+        query = query.where(Event.starts_at >= _start_of_day(date_from))
+    if date_to:
+        query = query.where(Event.starts_at < _start_of_day(date_to + timedelta(days=1)))
+
+    return list(db.scalars(query.order_by(Event.starts_at, Event.id)))
 
 
 def _invalid(errors: list[ErrorDetail]) -> ApiError:
