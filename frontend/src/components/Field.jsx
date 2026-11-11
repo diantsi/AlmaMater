@@ -30,8 +30,8 @@ export function RequiredMark() {
     // The control's `required` attribute is what assistive technology announces
     return (
         <span className="required" aria-hidden="true">
-      {' *'}
-    </span>
+            {' *'}
+        </span>
     );
 }
 

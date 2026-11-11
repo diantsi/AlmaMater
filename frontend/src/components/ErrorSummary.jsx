@@ -6,7 +6,8 @@ import { forwardRef } from 'react';
  * @param {{ fieldErrors: Record<string, string[]>, formErrors: string[], labels: Record<string, string> }} props
  * @param {import('react').ForwardedRef<HTMLDivElement>} ref
  */
-function ErrorSummary({ fieldErrors, formErrors, labels }, ref) { const fieldItems = Object.keys(labels).flatMap((field) =>
+function ErrorSummary({ fieldErrors, formErrors, labels }, ref) {
+  const fieldItems = Object.keys(labels).flatMap((field) =>
     (fieldErrors[field] ?? []).map((message) => ({ field, message })),
   );
   const count = fieldItems.length + formErrors.length;
