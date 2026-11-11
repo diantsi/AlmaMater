@@ -24,7 +24,7 @@ make check   # runs backend tests, the frontend -> /api/health smoke check and t
 
 Open http://localhost:5173; it redirects to the `/events` catalog. `make seed file=seed/data.example.json` loads fake example data to see event cards. Stop the stack with `make down`. `make help` lists all targets; see `docs/commands.md`.
 
-The current build is the walking skeleton plus a first slice of the event features: an unauthenticated catalog API with event create/update, an `/events` catalog page and a `/events/new` form shell (no submission yet). Sign-in, event details, filters, cancellation and subscriptions are not implemented yet.
+The current build is the walking skeleton plus a first slice of the event features: an unauthenticated catalog API with event create/update, an `/events` catalog page and a `/events/new` form that publishes events with the required fields. Sign-in, event details, filters, cancellation and subscriptions are not implemented yet.
 
 # Users 
 The platform is designed for:
