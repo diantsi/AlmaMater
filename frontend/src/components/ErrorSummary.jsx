@@ -1,8 +1,12 @@
 import { forwardRef } from 'react';
 
 // Every issue of a failed publication: field issues link to their input, form-level issues are listed as text
-const ErrorSummary = forwardRef(function ErrorSummary({ fieldErrors, formErrors, labels }, ref) {
-  const fieldItems = Object.keys(labels).flatMap((field) =>
+
+/**
+ * @param {{ fieldErrors: Record<string, string[]>, formErrors: string[], labels: Record<string, string> }} props
+ * @param {import('react').ForwardedRef<HTMLDivElement>} ref
+ */
+function ErrorSummary({ fieldErrors, formErrors, labels }, ref) { const fieldItems = Object.keys(labels).flatMap((field) =>
     (fieldErrors[field] ?? []).map((message) => ({ field, message })),
   );
   const count = fieldItems.length + formErrors.length;
@@ -33,6 +37,6 @@ const ErrorSummary = forwardRef(function ErrorSummary({ fieldErrors, formErrors,
       </ul>
     </div>
   );
-});
+}
 
-export default ErrorSummary;
+export default forwardRef(ErrorSummary);

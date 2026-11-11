@@ -19,7 +19,7 @@ Prerequisites: Docker with Compose v2, and GNU `make`.
 
 ```sh
 make up      # creates .env from .env.example if missing, builds and starts frontend, backend, db, migrate
-make check   # runs backend tests, the frontend -> /api/health smoke check and the frontend production build
+make check   # runs Ruff, ESLint, type checking, backend tests, smoke test and frontend build
 ```
 
 Open http://localhost:5173; it redirects to the `/events` catalog. `make seed file=seed/data.example.json` loads fake example data to see event cards. Stop the stack with `make down`. `make help` lists all targets; see `docs/commands.md`.

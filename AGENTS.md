@@ -95,7 +95,7 @@ Current repo-wide rules:
 Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/commands.md`.
 
 - `make up`: build and start `frontend`, `backend`, `db`, `migrate` (creates `.env` from `.env.example`); UI at http://localhost:5173, API docs at http://localhost:8000/docs
-- `make check`: all verification (`make test` backend pytest + `make smoke` proxy call to `/api/health` + `make frontend-build`); stack must be up
+- `make check`: run Ruff, ESLint, TypeScript `checkJs`, backend pytest, API smoke test and frontend production build; the stack must be started with `make up` first
 - `make test args="-k health"`: backend tests only
 - `make migrate` / `make migration name=<slug> rev=<id>`: apply / create Alembic migrations
 - `make seed [file=<path>]`: upsert seed data from `backend/seed/data.json`; `file=seed/data.example.json` loads fake dev data
@@ -137,7 +137,7 @@ Owned by root (no child AGENTS.md):
 - `.env.example` — local-only placeholder config (Postgres, `DB_PORT`, `FRONTEND_PORT`, `BACKEND_PORT`); `make up` copies it to the git-ignored `.env` only when `.env` is missing, so add new keys to an existing `.env` by hand
 - `raw_research_output/adr/` — ADR-001…007 (repo structure, UI, backend, data storage, auth, local runtime, event notifications)
 - `raw_research_output/p2/`, `raw_research_output/p3/` — historical practice outputs (audience analysis, VPC, critical analysis, user journey, story map, scope, MVP refinement, acceptance criteria)
-- `prompts/` — prompts used to produce practice outputs 2.1–4.4, the walking skeleton (`4.5_scaffolding_skeleton.md`), and feature iterations starting with `5.1_frontend_iteration_1.md`
+- `prompts/` — prompts for practice outputs 2.1–4.4, the walking skeleton (`4.5_scaffolding_skeleton.md`), frontend feature iterations (`5.1_frontend_iteration_1.md`, `5.2_frontend_iteration_2.md`) and Practice 5 guardrail fixes (`5.2_fixing_and_refactoring.md`)
 
 ## Walking Skeleton Contract
 
@@ -170,4 +170,5 @@ The initial application skeleton must establish a working connection between the
 - All required checks can be executed through Makefile targets.
 
 ### Verification
-- `make up`, then `make check`: backend pytest (health, DB `SELECT 1`, Alembic head revision, catalog and event create/update endpoints) plus the frontend proxy smoke call to `/api/health`
+
+- `make up`, then `make check`: Ruff backend lint, ESLint frontend lint, TypeScript `checkJs`, backend pytest (health, DB connection, Alembic migrations, catalog and event create/update endpoints), frontend proxy smoke check and Vite production build
