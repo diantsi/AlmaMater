@@ -1,7 +1,7 @@
 # AlmaMater — MVP Data Model and Persistence Contract
 
 **Practice:** 4.3 — Technical contracts  
-**Status:** MVP contract aligned with the requirements digest (D-01…D-10, A-01…A-18); not implemented beyond the walking-skeleton baseline migration `0001`  
+**Status:** MVP contract aligned with the requirements digest (D-01…D-10, A-01…A-18); partially implemented: migration `0002` creates `organizations`, `topics`, `faculties`, `events` (without the user columns; see `backend/AGENTS.md` deviations); events are created and edited through the API  
 **Date:** 2026-10-28  
 **Related:** [`api-contracts.md`](api-contracts.md), [`requirements.md`](requirements.md), [`analysis/requirements-digest.md`](analysis/requirements-digest.md), [`user-stories/`](user-stories/), ADRs in [`../raw_research_output/adr/`](../raw_research_output/adr/)
 

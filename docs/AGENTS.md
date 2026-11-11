@@ -3,7 +3,7 @@
 ## Purpose
 
 - Canonical source of truth for AlmaMater MVP scope, user stories, requirement analysis, HTTP API contract and data model
-- `frontend/` and `backend/` (currently the Practice 4 walking skeleton) are implemented against these docs
+- `frontend/` and `backend/` (walking skeleton plus the backend catalog API with event create/update) are implemented against these docs
 
 ## Ownership
 

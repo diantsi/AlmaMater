@@ -1,0 +1,22 @@
+{
+  "organizations": [
+    {"name": "Example Debate Club", "slug": "example-debate-club", "registered_email": "debate@example.test"},
+    {"name": "Example Robotics Society", "slug": "example-robotics-society", "registered_email": "robotics@example.test"},
+    {"name": "Example Film Circle", "slug": "example-film-circle", "registered_email": "film@example.test"}
+  ],
+  "topics": [
+    {"code": "example-science", "name": "Example: Science"},
+    {"code": "example-arts", "name": "Example: Arts"},
+    {"code": "example-career", "name": "Example: Career"}
+  ],
+  "faculties": [
+    {"code": "example-faculty-a", "name": "Example Faculty A"},
+    {"code": "example-faculty-b", "name": "Example Faculty B"},
+    {"code": "example-faculty-c", "name": "Example Faculty C"}
+  ],
+  "events": [
+    {"id": "6f1c2a4e-0b7d-4c1e-9a52-3e8f1d0c7a01", "organization": "example-debate-club", "topic": "example-career", "faculty": "example-faculty-a", "title": "Example: Open Debate Night", "description": "Practice debate on a motion announced at the start.\nNo preparation needed.", "starts_at": "2026-12-03T18:00:00+02:00", "speaker_name": "Example Speaker", "intended_audience": "Anyone curious about debating", "newcomers_welcome": true, "format": "IN_PERSON", "venue": "Example Building, Room 101", "duration_minutes": 90, "participation_method": "OPEN_ATTENDANCE", "attendance_instructions": "Just come, seats are first come first served."},
+    {"id": "6f1c2a4e-0b7d-4c1e-9a52-3e8f1d0c7a02", "organization": "example-robotics-society", "topic": "example-science", "faculty": "example-faculty-b", "title": "Example: Intro to Line-Following Robots", "description": "Online workshop: build a simulated line-following robot.", "starts_at": "2026-12-10T17:30:00+02:00", "format": "ONLINE", "meeting_url": "https://meet.example.test/robotics-intro", "duration_minutes": 120, "registration_deadline": "2026-12-08T23:59:00+02:00", "participation_method": "GOOGLE_FORM", "google_form_url": "https://forms.example.test/robotics-intro"},
+    {"id": "6f1c2a4e-0b7d-4c1e-9a52-3e8f1d0c7a03", "organization": "example-film-circle", "topic": "example-arts", "faculty": "example-faculty-c", "status": "CANCELLED", "cancelled_at": "2026-11-09T12:00:00+02:00", "title": "Example: Winter Film Screening", "description": "Screening and discussion of an example film.", "starts_at": "2027-01-21T19:00:00+02:00", "newcomers_welcome": false, "format": "IN_PERSON", "venue": "Example Hall", "participation_method": "DIRECT_CONTACT", "contact_details": "Write to film@example.test to reserve a seat."}
+  ]
+}

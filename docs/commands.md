@@ -24,7 +24,7 @@ Why: one entry point keeps local commands identical for every team member and ag
 
 ## 3. Targets
 
-Services live in the root `compose.yaml`: `frontend`, `backend`, `db` and `migrate`. The ADR-006 `worker` (notification outbox sender, US-45b/c) is in the MVP but not yet in Compose: the walking skeleton has no business logic, so the service is added together with the notifications module. Only `frontend` is published on localhost (`FRONTEND_PORT`, default 5173). `backend` and `db` stay on the internal Compose network, and the browser reaches the API through the Vite `/api` proxy. Targets that need configuration depend on `.env`, which is copied from `.env.example` when missing.
+Services live in the root `compose.yaml`: `frontend`, `backend`, `db` and `migrate`. The ADR-006 `worker` (notification outbox sender, US-45b/c) is in the MVP but not yet in Compose: the walking skeleton has no business logic, so the service is added together with the notifications module. `frontend` is published on localhost (`FRONTEND_PORT`, default 5173) and the browser app reaches the API through the Vite `/api` proxy. `backend` is also published on `127.0.0.1` only (`BACKEND_PORT`, default 8000) for Swagger UI at `/docs` and direct API calls during development. `db` is published on `127.0.0.1` only (`DB_PORT`, default 5432) for host DB clients (PyCharm, `psql`); containers still reach it at `db:5432`. Targets that need configuration depend on `.env`, which is copied from `.env.example` when missing.
 
 | Target | Action | Status |
 |---|---|---|
@@ -36,7 +36,8 @@ Services live in the root `compose.yaml`: `frontend`, `backend`, `db` and `migra
 | `ps` | Show service status, including the exited `migrate` job | implemented |
 | `backend-shell` | Shell inside the `backend` container | implemented |
 | `migrate` | Run `alembic upgrade head` via the `migrate` job | implemented |
-| `migration` | Create an Alembic revision (autogenerate); requires `name=<slug>` | implemented |
+| `migration` | Create an Alembic revision (autogenerate); requires `name=<slug>`, optional `rev=<id>` (e.g. `0003`) for the `<rev>_<slug>` naming | implemented |
+| `seed` | Upsert organisations, topics, faculties, events from `backend/seed/data.json`; `file=<path>` (relative to `backend/`) overrides | implemented |
 | `test` | Run backend pytest against PostgreSQL; `args=` passed through | implemented |
 | `smoke` | Call `/api/health` through the frontend proxy; stack must be up | implemented |
 | `check` | `test` + `smoke`: all walking-skeleton checks | implemented |

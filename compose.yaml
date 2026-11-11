@@ -15,6 +15,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+    # Host access for DB clients (PyCharm, psql); localhost only
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
@@ -33,7 +36,11 @@ services:
 
   backend:
     <<: *backend
+    # 0.0.0.0 inside the container; the host mapping below restricts access to localhost
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    # Swagger UI (/docs) and direct API calls during development
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
     depends_on:
       migrate:
         condition: service_completed_successfully
