@@ -2,7 +2,7 @@ COMPOSE := docker compose
 
 .DEFAULT_GOAL := help
 
-.PHONY: help up down restart logs ps backend-shell migrate migration seed test smoke check frontend-lock db-shell db-reset
+.PHONY: help up down restart logs ps backend-shell migrate migration seed test smoke frontend-build check frontend-lock db-shell db-reset
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-15s %s\n", $$1, $$2}'
@@ -44,10 +44,14 @@ smoke: ## Call /api/health through the frontend proxy (stack must be up)
 	$(COMPOSE) exec frontend wget -qO- http://127.0.0.1:5173/api/health
 	@echo
 
-check: test smoke ## Run all walking-skeleton checks
+frontend-build: .env ## Build the frontend bundle (rebuilds the image; output discarded)
+	$(COMPOSE) run --rm --build --no-deps frontend npm run build -- --outDir /tmp/dist --emptyOutDir
 
+check: test smoke frontend-build ## Run all checks
+
+# Empties the container-only node_modules first so the lock lists every platform's optional binaries (npm/cli#4828)
 frontend-lock: .env ## Regenerate frontend/package-lock.json
-	$(COMPOSE) run --rm --no-deps frontend npm install --package-lock-only
+	$(COMPOSE) run --rm --no-deps frontend sh -c 'rm -rf node_modules/* node_modules/.[!.]* && npm install --package-lock-only'
 
 db-shell: ## Open psql in the db container
 	$(COMPOSE) exec db sh -c 'psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'

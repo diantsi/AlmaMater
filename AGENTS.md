@@ -7,7 +7,7 @@
 
 - AlmaMater is a members-only event catalog for NaUKMA. Student organisations publish structured events through their registered Office 365 address. Signed-in students browse and filter them, follow an external participation route, and can subscribe to change and cancellation emails
 - Stack: React + Vite (JavaScript) → FastAPI + SQLAlchemy + Alembic → PostgreSQL, run locally with Docker Compose (ADR-001…007)
-- Current state: walking skeleton (placeholder homepage, `GET /api/health`) plus an unauthenticated catalog API for organisations, topics, faculties and events (migration `0002`), including event create/update (`POST`/`PATCH /api/events`); deviations from the contracts are listed in `backend/AGENTS.md`
+- Current state: walking skeleton (`GET /api/health`) plus an unauthenticated catalog API for organisations, topics, faculties and events (migration `0002`), including event create/update (`POST`/`PATCH /api/events`); deviations from the contracts are listed in `backend/AGENTS.md`. The frontend has the `/events` catalog (default route) and a `/events/new` form shell with organisation/topic/faculty selects (no submission yet)
 
 ## Core Contract
 
@@ -95,7 +95,7 @@ Current repo-wide rules:
 Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/commands.md`.
 
 - `make up`: build and start `frontend`, `backend`, `db`, `migrate` (creates `.env` from `.env.example`); UI at http://localhost:5173, API docs at http://localhost:8000/docs
-- `make check`: all verification (`make test` backend pytest + `make smoke` proxy call to `/api/health`); stack must be up
+- `make check`: all verification (`make test` backend pytest + `make smoke` proxy call to `/api/health` + `make frontend-build`); stack must be up
 - `make test args="-k health"`: backend tests only
 - `make migrate` / `make migration name=<slug> rev=<id>`: apply / create Alembic migrations
 - `make seed [file=<path>]`: upsert seed data from `backend/seed/data.json`; `file=seed/data.example.json` loads fake dev data
@@ -126,7 +126,7 @@ Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/co
 
 - `docs/AGENTS.md` — requirements, user stories, requirement analysis, API contract, data model; when and how to read and maintain them
 - `backend/AGENTS.md` — FastAPI app, catalog modules and event create/update, SQLAlchemy/DB setup, Alembic migrations, seeder, pytest, temporary contract deviations
-- `frontend/AGENTS.md` — React + Vite client, `/api` proxy, placeholder homepage
+- `frontend/AGENTS.md` — React + Vite client, React Router pages (event catalog, create-event form shell), `/api` modules and proxy
 
 Owned by root (no child AGENTS.md):
 
@@ -137,7 +137,7 @@ Owned by root (no child AGENTS.md):
 - `.env.example` — local-only placeholder config (Postgres, `DB_PORT`, `FRONTEND_PORT`, `BACKEND_PORT`); `make up` copies it to the git-ignored `.env` only when `.env` is missing, so add new keys to an existing `.env` by hand
 - `raw_research_output/adr/` — ADR-001…007 (repo structure, UI, backend, data storage, auth, local runtime, event notifications)
 - `raw_research_output/p2/`, `raw_research_output/p3/` — historical practice outputs (audience analysis, VPC, critical analysis, user journey, story map, scope, MVP refinement, acceptance criteria)
-- `prompts/` — prompts used to produce practice outputs 2.1–4.4 (4.4 = agent harness: DOX + docs indexing, Makefile) and `4.5_scaffolding_skeleton.md` (walking skeleton)
+- `prompts/` — prompts used to produce practice outputs 2.1–4.4, the walking skeleton (`4.5_scaffolding_skeleton.md`), and feature iterations starting with `5.1_frontend_iteration_1.md`
 
 ## Walking Skeleton Contract
 

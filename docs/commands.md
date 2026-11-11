@@ -40,8 +40,9 @@ Services live in the root `compose.yaml`: `frontend`, `backend`, `db` and `migra
 | `seed` | Upsert organisations, topics, faculties, events from `backend/seed/data.json`; `file=<path>` (relative to `backend/`) overrides | implemented |
 | `test` | Run backend pytest against PostgreSQL; `args=` passed through | implemented |
 | `smoke` | Call `/api/health` through the frontend proxy; stack must be up | implemented |
-| `check` | `test` + `smoke`: all walking-skeleton checks | implemented |
-| `frontend-lock` | Regenerate `frontend/package-lock.json` inside the container | implemented |
+| `frontend-build` | Production `vite build` in a fresh `frontend` container (image rebuilt first); output discarded, verification only | implemented |
+| `check` | `test` + `smoke` + `frontend-build`: all checks | implemented |
+| `frontend-lock` | Regenerate `frontend/package-lock.json` inside the container; empties the container-only `node_modules` first so the lock lists every platform's optional binaries (Rollup, esbuild) | implemented |
 | `lint` | Run linters for backend and frontend | planned (no linter chosen yet) |
 | `format` | Run formatters | planned (no formatter chosen yet) |
 | `db-shell` | Open `psql` in the `db` container | implemented |

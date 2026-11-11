@@ -19,12 +19,12 @@ Prerequisites: Docker with Compose v2, and GNU `make`.
 
 ```sh
 make up      # creates .env from .env.example if missing, builds and starts frontend, backend, db, migrate
-make check   # runs backend tests (health, DB connection, migration) and the frontend -> /api/health smoke check
+make check   # runs backend tests, the frontend -> /api/health smoke check and the frontend production build
 ```
 
-Open http://localhost:5173. The page should show "Backend reachable: almamater-api — ok". Stop the stack with `make down`. `make help` lists all targets; see `docs/commands.md`.
+Open http://localhost:5173; it redirects to the `/events` catalog. `make seed file=seed/data.example.json` loads fake example data to see event cards. Stop the stack with `make down`. `make help` lists all targets; see `docs/commands.md`.
 
-The current build is the Practice 4 walking skeleton. It has a placeholder homepage, `GET /api/health`, a PostgreSQL connection and an empty initial migration. No business features are implemented yet.
+The current build is the walking skeleton plus a first slice of the event features: an unauthenticated catalog API with event create/update, an `/events` catalog page and a `/events/new` form shell (no submission yet). Sign-in, event details, filters, cancellation and subscriptions are not implemented yet.
 
 # Users 
 The platform is designed for:
