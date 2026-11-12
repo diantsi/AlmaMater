@@ -137,7 +137,7 @@ Owned by root (no child AGENTS.md):
 - `.env.example` — local-only placeholder config (Postgres, `DB_PORT`, `FRONTEND_PORT`, `BACKEND_PORT`); `make up` copies it to the git-ignored `.env` only when `.env` is missing, so add new keys to an existing `.env` by hand
 - `raw_research_output/adr/` — ADR-001…007 (repo structure, UI, backend, data storage, auth, local runtime, event notifications)
 - `raw_research_output/p2/`, `raw_research_output/p3/` — historical practice outputs (audience analysis, VPC, critical analysis, user journey, story map, scope, MVP refinement, acceptance criteria)
-- `prompts/` — prompts for practice outputs 2.1–4.4, the walking skeleton (`4.5_scaffolding_skeleton.md`), frontend feature iterations (`5.1_frontend_iteration_1.md`, `5.2_frontend_iteration_2.md`) and Practice 5 guardrail fixes (`5.2_fixing_and_refactoring.md`)
+- `prompts/` — prompts for practice outputs 2.1–4.4, the walking skeleton (`4.5_scaffolding_skeleton.md`), frontend feature iterations (`5.1_frontend_iteration_1.md`, `5.2_frontend_iteration_2.md`), Practice 5 guardrail fixes (`5.2_fixing_and_refactoring.md`) and the AI code review (`5.4_ai_code_review.md`)
 
 ## Walking Skeleton Contract
 
