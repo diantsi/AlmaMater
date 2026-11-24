@@ -18,6 +18,12 @@ from app.events.schemas import (
     EventFieldsRequest,
     EventUpdateRequest,
 )
+from app.notifications.models import DeliveryKind
+from app.notifications.service import (
+    CHANGE_EMAIL_FIELDS,
+    delete_subscriptions,
+    queue_deliveries,
+)
 from app.organisations.models import Organization
 
 RequestModel = TypeVar("RequestModel", bound=BaseModel)
@@ -237,6 +243,37 @@ def update_event(
         setattr(event, field, value)
     event.revision += 1
     event.updated_at = now
+    # US-45b: deliveries commit or roll back together with the edit (C-08)
+    if effective.keys() & CHANGE_EMAIL_FIELDS:
+        queue_deliveries(db, event, DeliveryKind.CHANGED, now)
+    db.commit()
+    db.refresh(event)
+    return event
+
+
+# api-contracts.md §6.5 / database-schema.md §4 (US-44b, US-45c): one transaction
+def cancel_event(
+    db: Session, event_id: uuid.UUID, managed_organization_id: uuid.UUID | None, user: User
+) -> Event:
+    event = db.scalars(select(Event).where(Event.id == event_id).with_for_update(of=Event)).first()
+    if event is None:
+        raise ApiError(404, "EVENT_NOT_FOUND", "Event not found.")
+    if event.organization_id != managed_organization_id:
+        raise ApiError(403, "ORGANIZATION_ACCESS_DENIED", "Only the owning organisation can cancel this event.")
+    if event.status == EventStatus.CANCELLED:
+        raise ApiError(409, "EVENT_ALREADY_CANCELLED", "Event is already cancelled.")
+    now = datetime.now(UTC)
+    if event.starts_at <= now:
+        raise ApiError(409, "EVENT_NOT_EDITABLE", "Past events cannot be cancelled.")
+
+    event.status = EventStatus.CANCELLED.value
+    event.cancelled_at = now
+    event.cancelled_by_user_id = user.id
+    event.updated_at = now
+    event.revision += 1
+    # Deliveries are written before the subscriptions end (database-schema.md §3.6, A-17)
+    queue_deliveries(db, event, DeliveryKind.CANCELLED, now)
+    delete_subscriptions(db, event.id)
     db.commit()
     db.refresh(event)
     return event

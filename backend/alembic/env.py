@@ -6,6 +6,7 @@ from sqlalchemy import engine_from_config, pool
 import app.auth.models  # noqa: F401,E402
 import app.dictionaries.models  # noqa: F401,E402
 import app.events.models  # noqa: F401,E402
+import app.notifications.models  # noqa: F401,E402
 import app.organisations.models  # noqa: F401,E402
 from alembic import context
 from app.config import settings
