@@ -4,13 +4,23 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy import func, select
 
+from app.auth.models import User
 from app.events.models import Event
-from tests.conftest import make_event, make_faculty, make_organization, make_topic
+from tests.conftest import (
+    make_event,
+    make_faculty,
+    make_organization,
+    make_topic,
+    make_user,
+    new_client,
+    sign_in,
+)
 
 
 @pytest.fixture
-def refs(db):
-    return make_organization(db), make_topic(db), make_faculty(db)
+def refs(db, manager_org):
+    # manager_client is signed in with manager_org's registered address
+    return manager_org, make_topic(db), make_faculty(db)
 
 
 def _future(days: int = 7) -> str:
@@ -18,9 +28,8 @@ def _future(days: int = 7) -> str:
 
 
 def _payload(refs, **overrides) -> dict:
-    org, topic, faculty = refs
+    _, topic, faculty = refs
     body = {
-        "organizationId": str(org.id),
         "title": "Test workshop",
         "description": "Test description",
         "startsAt": _future(),
@@ -47,11 +56,11 @@ def _fields(response) -> set[str]:
 # --- POST /api/events -------------------------------------------------------
 
 
-def test_create_publishes_event(client, db, refs):
+def test_create_publishes_event(manager_client, db, refs):
     org, topic, faculty = refs
     starts_at = datetime(2099, 3, 1, 16, 0, tzinfo=UTC)
 
-    response = client.post(
+    response = manager_client.post(
         "/api/events",
         json=_payload(refs, startsAt="2099-03-01T18:00:00+02:00", title="  Padded title  "),
     )
@@ -70,11 +79,11 @@ def test_create_publishes_event(client, db, refs):
     assert body["eventUrl"] == f"/events/{body['id']}"
     assert body["publishedAt"] == body["updatedAt"]
 
-    listed = client.get("/api/events", params={"organizationId": str(org.id)})
+    listed = manager_client.get("/api/events", params={"organizationId": str(org.id)})
     assert [item["id"] for item in listed.json()["items"]] == [body["id"]]
 
 
-def test_create_reports_all_errors_at_once(client, db, refs):
+def test_create_reports_all_errors_at_once(manager_client, db, refs):
     org, _, _ = refs
     payload = _payload(
         refs,
@@ -85,7 +94,7 @@ def test_create_reports_all_errors_at_once(client, db, refs):
         description="   ",
     )
 
-    response = client.post("/api/events", json=payload)
+    response = manager_client.post("/api/events", json=payload)
 
     assert response.status_code == 422
     assert response.json()["code"] == "VALIDATION_ERROR"
@@ -104,15 +113,13 @@ def test_create_reports_all_errors_at_once(client, db, refs):
         ({"googleFormUrl": None}, {"googleFormUrl"}),
         ({"startsAt": (datetime.now(UTC) - timedelta(hours=1)).isoformat()}, {"startsAt"}),
         ({"topicId": str(uuid.uuid4()), "facultyId": str(uuid.uuid4())}, {"topicId", "facultyId"}),
-        ({"organizationId": str(uuid.uuid4())}, {"organizationId"}),
-        ({"organizationId": ...}, {"organizationId"}),
         ({"speakerName": "x" * 161}, {"speakerName"}),
     ],
 )
-def test_create_validation_errors(client, db, refs, overrides, fields):
+def test_create_validation_errors(manager_client, db, refs, overrides, fields):
     org, _, _ = refs
 
-    response = client.post("/api/events", json=_payload(refs, **overrides))
+    response = manager_client.post("/api/events", json=_payload(refs, **overrides))
 
     assert response.status_code == 422
     assert _fields(response) == fields
@@ -130,12 +137,14 @@ def test_create_validation_errors(client, db, refs, overrides, fields):
         {"startsAt": "2099-03-01T18:00:00"},
         {"durationMinutes": "60"},
         {"newcomersWelcome": "yes"},
+        # The organisation comes from the session, never from the body (api-contracts.md §5.1)
+        {"organizationId": str(uuid.uuid4())},
     ],
 )
-def test_create_malformed_is_400(client, db, refs, overrides):
+def test_create_malformed_is_400(manager_client, db, refs, overrides):
     org, _, _ = refs
 
-    response = client.post("/api/events", json=_payload(refs, **overrides))
+    response = manager_client.post("/api/events", json=_payload(refs, **overrides))
 
     assert response.status_code == 400
     assert response.json()["code"] == "MALFORMED_REQUEST"
@@ -143,8 +152,8 @@ def test_create_malformed_is_400(client, db, refs, overrides):
     assert _count(db, org) == 0
 
 
-def test_create_non_object_body_is_400(client):
-    response = client.post("/api/events", json=["not", "an", "object"])
+def test_create_non_object_body_is_400(manager_client):
+    response = manager_client.post("/api/events", json=["not", "an", "object"])
 
     assert response.status_code == 400
     assert response.json()["code"] == "MALFORMED_REQUEST"
@@ -153,10 +162,10 @@ def test_create_non_object_body_is_400(client):
 # --- PATCH /api/events/{eventId} --------------------------------------------
 
 
-def test_update_changes_event_and_bumps_revision(client, db, refs):
+def test_update_changes_event_and_bumps_revision(manager_client, db, refs):
     event = make_event(db, *refs, speaker_name="Old speaker", updated_at=datetime(2026, 1, 1, tzinfo=UTC))
 
-    response = client.patch(
+    response = manager_client.patch(
         f"/api/events/{event.id}",
         json={"revision": 1, "title": "New title", "speakerName": None, "startsAt": "2099-03-01T18:00:00+02:00"},
     )
@@ -172,10 +181,10 @@ def test_update_changes_event_and_bumps_revision(client, db, refs):
     assert body["updatedAt"] != "2026-01-01T00:00:00Z"
 
 
-def test_update_switches_format_and_method(client, db, refs):
+def test_update_switches_format_and_method(manager_client, db, refs):
     event = make_event(db, *refs)
 
-    response = client.patch(
+    response = manager_client.patch(
         f"/api/events/{event.id}",
         json={
             "revision": 1,
@@ -195,10 +204,10 @@ def test_update_switches_format_and_method(client, db, refs):
     assert body["attendanceInstructions"] is None
 
 
-def test_update_validates_merged_event(client, db, refs):
+def test_update_validates_merged_event(manager_client, db, refs):
     event = make_event(db, *refs)
 
-    response = client.patch(
+    response = manager_client.patch(
         f"/api/events/{event.id}", json={"revision": 1, "format": "ONLINE", "meetingUrl": "https://meet.example/x"}
     )
 
@@ -208,19 +217,19 @@ def test_update_validates_merged_event(client, db, refs):
     assert (event.format, event.revision) == ("IN_PERSON", 1)
 
 
-def test_update_without_effective_change_keeps_revision(client, db, refs):
+def test_update_without_effective_change_keeps_revision(manager_client, db, refs):
     event = make_event(db, *refs)
 
-    response = client.patch(f"/api/events/{event.id}", json={"revision": 1, "title": f"  {event.title} "})
+    response = manager_client.patch(f"/api/events/{event.id}", json={"revision": 1, "title": f"  {event.title} "})
 
     assert response.status_code == 200
     assert response.json()["revision"] == 1
 
 
-def test_update_stale_revision_is_409(client, db, refs):
+def test_update_stale_revision_is_409(manager_client, db, refs):
     event = make_event(db, *refs, revision=3)
 
-    response = client.patch(f"/api/events/{event.id}", json={"revision": 2, "title": "New title"})
+    response = manager_client.patch(f"/api/events/{event.id}", json={"revision": 2, "title": "New title"})
 
     assert response.status_code == 409
     assert response.json()["code"] == "EVENT_REVISION_CONFLICT"
@@ -235,17 +244,17 @@ def test_update_stale_revision_is_409(client, db, refs):
         {"starts_at": datetime.now(UTC) - timedelta(days=1)},
     ],
 )
-def test_update_cancelled_or_past_is_409(client, db, refs, overrides):
+def test_update_cancelled_or_past_is_409(manager_client, db, refs, overrides):
     event = make_event(db, *refs, **overrides)
 
-    response = client.patch(f"/api/events/{event.id}", json={"revision": 1, "title": "New title"})
+    response = manager_client.patch(f"/api/events/{event.id}", json={"revision": 1, "title": "New title"})
 
     assert response.status_code == 409
     assert response.json()["code"] == "EVENT_NOT_EDITABLE"
 
 
-def test_update_unknown_event_is_404(client):
-    response = client.patch(f"/api/events/{uuid.uuid4()}", json={"revision": 1, "title": "New title"})
+def test_update_unknown_event_is_404(manager_client):
+    response = manager_client.patch(f"/api/events/{uuid.uuid4()}", json={"revision": 1, "title": "New title"})
 
     assert response.status_code == 404
     assert response.json()["code"] == "EVENT_NOT_FOUND"
@@ -261,12 +270,73 @@ def test_update_unknown_event_is_404(client):
         {"revision": "1", "title": "New title"},
     ],
 )
-def test_update_malformed_is_400(client, db, refs, body):
+def test_update_malformed_is_400(manager_client, db, refs, body):
     event = make_event(db, *refs)
 
-    response = client.patch(f"/api/events/{event.id}", json=body)
+    response = manager_client.patch(f"/api/events/{event.id}", json=body)
 
     assert response.status_code == 400
     assert response.json()["code"] == "MALFORMED_REQUEST"
     db.refresh(event)
     assert (event.title, event.revision) == ("Test event", 1)
+
+
+# --- Authorisation (api-contracts.md §2, §6.3, §6.4; C-02) ------------------
+
+
+def test_create_records_creator_and_session_organisation(manager_client, db, refs):
+    org, _, _ = refs
+
+    response = manager_client.post("/api/events", json=_payload(refs))
+
+    assert response.status_code == 201
+    assert response.json()["canManage"] is True
+    event = db.get(Event, uuid.UUID(response.json()["id"]))
+    assert event.organization_id == org.id
+    assert db.get(User, event.created_by_user_id).email == org.registered_email
+
+
+def test_create_by_member_without_organisation_is_403(member_client, db):
+    refs = (make_organization(db), make_topic(db), make_faculty(db))
+
+    response = member_client.post("/api/events", json=_payload(refs))
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "ORGANIZATION_ACCESS_DENIED"
+    assert _count(db, refs[0]) == 0
+
+
+@pytest.mark.parametrize("csrf", [None, "wrong-token"])
+def test_mutations_without_valid_csrf_are_403(manager_client, db, refs, csrf):
+    event = make_event(db, *refs)
+    manager_client.headers.pop("X-CSRF-Token")
+    headers = {"X-CSRF-Token": csrf} if csrf else {}
+
+    created = manager_client.post("/api/events", json=_payload(refs), headers=headers)
+    edited = manager_client.patch(f"/api/events/{event.id}", json={"revision": 1, "title": "X"}, headers=headers)
+
+    assert [created.status_code, edited.status_code] == [403, 403]
+    assert {created.json()["code"], edited.json()["code"]} == {"INVALID_CSRF_TOKEN"}
+    assert _count(db, refs[0]) == 1
+
+
+def test_other_organisation_cannot_edit_event(client, db, refs):
+    event = make_event(db, *refs)
+    other_org = make_organization(db)
+    sign_in(client, db, make_user(db, email=other_org.registered_email))
+
+    response = client.patch(f"/api/events/{event.id}", json={"revision": 1, "title": "Hijacked"})
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "ORGANIZATION_ACCESS_DENIED"
+    db.refresh(event)
+    assert (event.title, event.revision) == ("Test event", 1)
+
+
+def test_can_manage_only_for_owning_organisation(manager_client, db, refs):
+    event = make_event(db, *refs)
+    member = new_client()
+    sign_in(member, db, make_user(db))
+
+    assert manager_client.get(f"/api/events/{event.id}").json()["canManage"] is True
+    assert member.get(f"/api/events/{event.id}").json()["canManage"] is False

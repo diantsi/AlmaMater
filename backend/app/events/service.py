@@ -9,6 +9,7 @@ from pydantic.alias_generators import to_camel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.auth.models import User
 from app.dictionaries.models import Faculty, Topic
 from app.errors import ApiError, ErrorDetail
 from app.events.models import Event, EventFormat, EventStatus, ParticipationMethod
@@ -174,23 +175,20 @@ def _invalid(errors: list[ErrorDetail]) -> ApiError:
 
 
 # api-contracts.md §6.3: validate everything, insert only if the whole input is valid
-def create_event(db: Session, payload: dict[str, Any]) -> Event:
+# The caller has already been authorised as `organization`'s registered address (C-02)
+def create_event(db: Session, payload: dict[str, Any], organization: Organization, user: User) -> Event:
     request = parse_body(EventCreateRequest, payload)
     now = datetime.now(UTC)
     state = _normalise(request.model_dump(include=set(EDITABLE_FIELDS)))
 
-    errors: list[ErrorDetail] = []
-    if request.organization_id is None:
-        errors.append(ErrorDetail(field="organizationId", message="Field is required."))
-    elif db.get(Organization, request.organization_id) is None:
-        errors.append(ErrorDetail(field="organizationId", message="Unknown identifier."))
-    errors += validate_event(db, state, now)
+    errors = validate_event(db, state, now)
     if errors:
         raise _invalid(errors)
 
     event = Event(
         **state,
-        organization_id=request.organization_id,
+        organization_id=organization.id,
+        created_by_user_id=user.id,
         status=EventStatus.PUBLISHED.value,
         revision=1,
         published_at=now,
@@ -203,7 +201,9 @@ def create_event(db: Session, payload: dict[str, Any]) -> Event:
 
 
 # api-contracts.md §6.4 / database-schema.md §4: lifecycle, optimistic concurrency, merged validation
-def update_event(db: Session, event_id: uuid.UUID, payload: dict[str, Any]) -> Event:
+def update_event(
+    db: Session, event_id: uuid.UUID, payload: dict[str, Any], managed_organization_id: uuid.UUID | None
+) -> Event:
     request = parse_body(EventUpdateRequest, payload)
     changed_fields = request.model_fields_set - {"revision"}
     if not changed_fields:
@@ -212,6 +212,8 @@ def update_event(db: Session, event_id: uuid.UUID, payload: dict[str, Any]) -> E
     event = db.scalars(select(Event).where(Event.id == event_id).with_for_update(of=Event)).first()
     if event is None:
         raise ApiError(404, "EVENT_NOT_FOUND", "Event not found.")
+    if event.organization_id != managed_organization_id:
+        raise ApiError(403, "ORGANIZATION_ACCESS_DENIED", "Only the owning organisation can change this event.")
 
     now = datetime.now(UTC)
     if event.status == EventStatus.CANCELLED or event.starts_at <= now:

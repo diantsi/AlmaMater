@@ -3,6 +3,7 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 
 # Model modules must be imported so Base.metadata sees their tables
+import app.auth.models  # noqa: F401,E402
 import app.dictionaries.models  # noqa: F401,E402
 import app.events.models  # noqa: F401,E402
 import app.organisations.models  # noqa: F401,E402

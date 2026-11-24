@@ -48,8 +48,9 @@ class EventDetailResponse(ApiModel):
     updated_at: UtcDateTime
     cancelled_at: UtcDateTime | None
     event_url: str
-    # No sessions yet: always false until auth lands (backend/AGENTS.md)
+    # Caller manages the owning organisation (C-02); set per request by the router
     can_manage: bool = False
+    # Subscriptions are not implemented yet: always false (backend/AGENTS.md)
     subscribed: bool = False
 
 
@@ -75,10 +76,9 @@ class EventFieldsRequest(ApiRequest):
     attendance_instructions: StrictStr | None = None
 
 
-# api-contracts.md §6.3
+# api-contracts.md §6.3: the organisation comes from the session, so `organizationId` is an unknown field (400)
 class EventCreateRequest(EventFieldsRequest):
-    # Temporary until auth lands: the organisation must come from the session (backend/AGENTS.md)
-    organization_id: uuid.UUID | None = None
+    pass
 
 
 # api-contracts.md §6.4: partial update; absent field = unchanged, explicit null = clear

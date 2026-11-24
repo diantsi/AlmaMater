@@ -2,7 +2,7 @@ COMPOSE := docker compose
 
 .DEFAULT_GOAL := help
 
-.PHONY: help up down restart logs ps backend-shell migrate migration seed test smoke frontend-build check frontend-lock db-shell db-reset backend-lint frontend-lint frontend-typecheck
+.PHONY: help up down restart logs ps backend-shell migrate migration seed switch-org test smoke frontend-build check frontend-lock db-shell db-reset backend-lint frontend-lint frontend-typecheck
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-15s %s\n", $$1, $$2}'
@@ -34,8 +34,12 @@ migration: .env ## Create an Alembic revision; requires name=<slug>, optional re
 	@test -n "$(name)" || (echo "usage: make migration name=<slug> [rev=<id>]" && exit 1)
 	$(COMPOSE) run --rm backend alembic revision --autogenerate -m "$(name)" $(if $(rev),--rev-id "$(rev)")
 
-seed: .env ## Upsert team-supplied reference data; optional file=<path> (default seed/data.json)
+seed: .env ## Apply a seed file (default seed/data.json): organisations, topics, faculties, organiser accounts, events; optional file=<path>
 	$(COMPOSE) run --rm backend python -m app.seed.seeder $(if $(file),--file "$(file)")
+
+switch-org: .env ## Dev only: flip organiser rights of email=<all|email> listed in `accounts` of backend/seed/data.example.json
+	@test -n "$(email)" || (echo "usage: make switch-org email=<all|email|login> (run from the repo root)" && exit 1)
+	$(COMPOSE) run --rm backend python -m app.seed.seeder --switch "$(email)" $(if $(file),--file "$(file)")
 
 test: .env ## Run backend tests against PostgreSQL; args= passed to pytest
 	$(COMPOSE) run --rm backend pytest $(args)

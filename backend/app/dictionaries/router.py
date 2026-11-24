@@ -2,11 +2,13 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.auth.dependencies import require_member
 from app.db.session import get_db
 from app.dictionaries.models import Faculty, Topic
 from app.dictionaries.schemas import DictionaryItemResponse
 
-router = APIRouter(tags=["dictionaries"])
+# Members only (api-contracts.md §2): the session is checked before anything else
+router = APIRouter(tags=["dictionaries"], dependencies=[Depends(require_member)])
 
 
 @router.get("/topics", response_model=list[DictionaryItemResponse])

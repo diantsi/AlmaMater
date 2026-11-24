@@ -22,12 +22,14 @@ make up      # creates .env from .env.example if missing, builds and starts fron
 make check   # runs Ruff, ESLint, type checking, backend tests, smoke test and frontend build
 ```
 
-Open http://localhost:5173; it redirects to the `/events` catalog. `make seed file=seed/data.example.json` loads fake example data to see event cards. Stop the stack with `make down`. `make help` lists all targets; see `docs/commands.md`.
+Open http://localhost:5173; it redirects to the `/events` catalog. `make seed file=seed/data.example.json` loads fake example organisations, topics and faculties (events are published through the API by a signed-in organisation). Stop the stack with `make down`. `make help` lists all targets; see `docs/commands.md`.
 
-The current build is the walking skeleton plus a first slice of the event features: an unauthenticated catalog API with event create/update, an `/events` catalog page and a `/events/new` form that publishes events with the required fields. Sign-in, event details, filters, cancellation and subscriptions are not implemented yet.
+The current build is the walking skeleton plus a first slice of the event features: Office 365 sign-in for `@ukma.edu.ua` accounts with server-side sessions, a members-only catalog API with event create/update by the owning organisation, an `/events` catalog page and a `/events/new` form for the required fields. The frontend does not handle sign-in yet; event details, filters, cancellation and subscriptions are not implemented yet.
 
 ## Try the scenario live
 Scenario: an organisation publishes an event and it appears in the catalog.
+
+> Temporarily blocked: the API now requires Office 365 sign-in, and the frontend sign-in UI is not built yet. Until it is, the pages below show errors.
 
 1. Start the stack and load example data (organisations, topics, faculties): `make up`, then `make seed file=seed/data.example.json`.
 2. Open http://localhost:5173/events/new (or click **Create event** in the header).

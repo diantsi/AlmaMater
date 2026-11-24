@@ -1,7 +1,7 @@
 # AlmaMater — MVP Data Model and Persistence Contract
 
 **Practice:** 4.3 — Technical contracts  
-**Status:** MVP contract aligned with the requirements digest (D-01…D-10, A-01…A-18); partially implemented: migration `0002` creates `organizations`, `topics`, `faculties`, `events` (without the user columns; see `backend/AGENTS.md` deviations); events are created and edited through the API  
+**Status:** MVP contract aligned with the requirements digest (D-01…D-10, A-01…A-18); partially implemented: migrations `0002`–`0003` create `organizations`, `topics`, `faculties`, `events` (with `created_by_user_id` / `cancelled_by_user_id`), `users` and `sessions`; events are created and edited through the API (seed data never contains events, since each needs its creator); `event_subscriptions` and `notification_deliveries` are pending (see `backend/AGENTS.md` deviations)  
 **Date:** 2026-10-28  
 **Related:** [`api-contracts.md`](api-contracts.md), [`requirements.md`](requirements.md), [`analysis/requirements-digest.md`](analysis/requirements-digest.md), [`user-stories/`](user-stories/), ADRs in [`../raw_research_output/adr/`](../raw_research_output/adr/)
 
@@ -279,5 +279,5 @@ Changing requiredness changes DB nullability and API validation together.
 ## 8. Open inputs before implementation
 
 - Real seed data: the organisation register with registered addresses, the topic list, the faculty list (D-07, A-07). Do not invent values.
-- Office 365 app registration for the NaUKMA tenant and an authorised mail transport for the worker (ADR-005, ADR-007).
-- Session lifetime and inactivity-timeout values; retry limit and backoff for deliveries.
+- An authorised mail transport for the worker (ADR-007). The Office 365 app registration is settled (`api-contracts.md` §10.1).
+- Retry limit and backoff for deliveries. Session lifetime is settled: 30 days absolute, 7 days inactivity (`api-contracts.md` §10.4).
