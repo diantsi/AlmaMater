@@ -29,8 +29,8 @@ names, env files and flags behind stable names.
 
 ## 3. Targets
 
-Services live in the root `compose.yaml`: `frontend`, `backend`, `db` and `migrate`. The ADR-006 `worker` (notification
-outbox sender, US-45b/c) is in the MVP but not yet in Compose: it is added together with the notifications module. `frontend` is published on localhost (`FRONTEND_PORT`, default
+Services live in the root `compose.yaml`: `frontend`, `backend`, `db`, `migrate` and `worker` (notification outbox
+sender, US-45b/c, ADR-007; restarts unless stopped, keeps the mailbox sign-in in the `mail-cache` volume). `frontend` is published on localhost (`FRONTEND_PORT`, default
 5173) and the browser app reaches the API through the Vite `/api` proxy. `backend` is also published on `127.0.0.1` only
 (`BACKEND_PORT`, default 8000) for Swagger UI at `/docs` and direct API calls during development. `db` is
 published on `127.0.0.1` only (`DB_PORT`, default 5432) for host DB clients (PyCharm, `psql`); containers still reach it at `db:5432`. Targets that need configuration depend on `.env`, which is copied from `.env.example` when missing.
@@ -38,7 +38,7 @@ published on `127.0.0.1` only (`DB_PORT`, default 5432) for host DB clients (PyC
 | Target               | Action                                                                                                                                                                               | Status                            |
 |----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------|
 | `help`               | List available targets (default goal)                                                                                                                                                | implemented                       |
-| `up`                 | Build and start the stack (`frontend`, `backend`, `db`, `migrate`) detached                                                                                                          | implemented                       |
+| `up`                 | Build and start the stack (`frontend`, `backend`, `db`, `migrate`, `worker`) detached                                                                                                | implemented                       |
 | `down`               | Stop the stack, keep the DB volume                                                                                                                                                   | implemented                       |
 | `restart`            | `down` + `up`                                                                                                                                                                        | implemented                       |
 | `logs`               | Follow logs; `service=<name>` to filter                                                                                                                                              | implemented                       |
@@ -48,6 +48,7 @@ published on `127.0.0.1` only (`DB_PORT`, default 5432) for host DB clients (PyC
 | `migration`          | Create an Alembic revision (autogenerate); requires `name=<slug>`, optional `rev=<id>` (e.g. `0003`) for the `<rev>_<slug>` naming                                                   | implemented                       |
 | `seed`               | Apply one seed file in one transaction (default `backend/seed/data.json`; `file=<path>` relative to `backend/` overrides): upsert organisations, topics, faculties, apply each dev organiser account's `is_org`, then insert events once (skipping, with a reason, events whose `organization_email` has no organisation or signed-in user yet) | implemented                       |
 | `switch-org`         | **Dev only:** flip organiser rights of `email=all` (every entry in `accounts` of `backend/seed/data.example.json`) or `email=<listed address or bare login>`; other accounts are refused. An organiser becomes a plain member (organisation address renamed to `<email>.disabled`; organisation and events kept), anyone else becomes an organiser (disabled organisation re-enabled, or `Test organisation (<local part>)` created); optional `file=<path>` | implemented                       |
+| `mail-login`         | Sign the team mailbox that sends notification emails in to Microsoft Graph once (prints a device code to enter at microsoft.com/devicelogin); the token cache stays in the `mail-cache` volume until `db-reset`. Then set `MAIL_DRY_RUN=false` in `.env` | implemented                       |
 | `test`               | Run backend pytest against PostgreSQL; `args=` passed through                                                                                                                        | implemented                       |
 | `backend-lint`       | Check Python code with Ruff; `args=` can be used for additional options such as `--fix`                                                                                              | implemented                       |
 | `frontend-lint`      | Check JavaScript and React code with ESLint                                                                                                                                          | implemented                       |

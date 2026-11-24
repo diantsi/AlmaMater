@@ -12,4 +12,4 @@ def test_latest_migration_applied():
     with engine.connect() as connection:
         version = connection.execute(text("SELECT version_num FROM alembic_version")).scalar()
 
-    assert version == "0003"
+    assert version == "0004"

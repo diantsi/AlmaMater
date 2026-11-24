@@ -6,24 +6,33 @@ from fastapi import APIRouter, Body, Depends, Path, Query, Response
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import AuthContext, require_csrf, require_member
+from app.auth.models import User
 from app.auth.service import managed_organization
 from app.db.session import get_db
 from app.errors import ApiError
 from app.events.models import Event
-from app.events.schemas import EventDetailResponse, EventListResponse
+from app.events.schemas import (
+    EventCancelResponse,
+    EventDetailResponse,
+    EventListResponse,
+)
+from app.events.service import cancel_event as cancel_event_record
 from app.events.service import create_event as create_event_record
 from app.events.service import list_events as list_event_records
 from app.events.service import update_event as update_event_record
+from app.notifications.service import is_subscribed
 from app.organisations.models import Organization
 
 # Members only (api-contracts.md §2): the session is checked before IDs or bodies, so 401 comes first
 router = APIRouter(tags=["events"], dependencies=[Depends(require_member)])
 
 
-def _detail(event: Event, organization: Organization | None) -> EventDetailResponse:
-    # canManage drives the edit and cancel actions (D-02)
+def _detail(db: Session, event: Event, organization: Organization | None, user: User) -> EventDetailResponse:
+    # canManage drives the edit and cancel actions (D-02); subscribed drives the notification button (US-45a)
     can_manage = organization is not None and event.organization_id == organization.id
-    return EventDetailResponse.model_validate(event).model_copy(update={"can_manage": can_manage})
+    return EventDetailResponse.model_validate(event).model_copy(
+        update={"can_manage": can_manage, "subscribed": is_subscribed(db, event.id, user.id)}
+    )
 
 
 # api-contracts.md §6.1
@@ -50,7 +59,7 @@ def get_event(
     event = db.get(Event, event_id)
     if event is None:
         raise ApiError(404, "EVENT_NOT_FOUND", "Event not found.")
-    return _detail(event, managed_organization(db, auth.user))
+    return _detail(db, event, managed_organization(db, auth.user), auth.user)
 
 
 # api-contracts.md §6.3: validate and publish as the session's organisation (US-03, US-07, US-39)
@@ -66,7 +75,7 @@ def create_event(
         raise ApiError(403, "ORGANIZATION_ACCESS_DENIED", "Only a registered organisation address can publish events.")
     event = create_event_record(db, payload, organization, auth.user)
     response.headers["Location"] = f"/api/events/{event.id}"
-    return _detail(event, organization)
+    return _detail(db, event, organization, auth.user)
 
 
 # api-contracts.md §6.4: partial edit of a published, upcoming event with optimistic concurrency
@@ -79,4 +88,15 @@ def update_event(
 ) -> EventDetailResponse:
     organization = managed_organization(db, auth.user)
     event = update_event_record(db, event_id, payload, organization.id if organization else None)
-    return _detail(event, organization)
+    return _detail(db, event, organization, auth.user)
+
+
+# api-contracts.md §6.5: no body; the event leaves the catalog, its URL keeps resolving (US-44b, US-47)
+@router.post("/events/{eventId}/cancel", response_model=EventCancelResponse)
+def cancel_event(
+    event_id: Annotated[uuid.UUID, Path(alias="eventId")],
+    auth: AuthContext = Depends(require_csrf),
+    db: Session = Depends(get_db),
+) -> Event:
+    organization = managed_organization(db, auth.user)
+    return cancel_event_record(db, event_id, organization.id if organization else None, auth.user)

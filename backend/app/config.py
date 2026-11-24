@@ -18,5 +18,11 @@ class Settings(BaseSettings):
     # False only for local HTTP development (ADR-005 localhost exception); true on HTTPS
     cookie_secure: bool = False
 
+    # Notification worker (ADR-007): base of the event links in emails
+    app_public_url: str = "http://localhost:5173"
+    # True: the worker logs each finished email instead of sending it through Microsoft Graph;
+    # set false once a mailbox is signed in with `make mail-login`
+    mail_dry_run: bool = True
+
 
 settings = Settings()

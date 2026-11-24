@@ -7,7 +7,7 @@
 
 - AlmaMater is a members-only event catalog for NaUKMA. Student organisations publish structured events through their registered Office 365 address. Signed-in students browse and filter them, follow an external participation route, and can subscribe to change and cancellation emails
 - Stack: React + Vite (JavaScript) → FastAPI + SQLAlchemy + Alembic → PostgreSQL, run locally with Docker Compose (ADR-001…007)
-- Current state: walking skeleton (`GET /api/health`), Office 365 sign-in with server-side sessions and CSRF (`/api/auth/*`, migration `0003`), and the members-only catalog API for organisations, topics, faculties and events, including event create/update by the owning organisation (`POST`/`PATCH /api/events`); remaining deviations (cancellation, subscriptions, notifications) are listed in `backend/AGENTS.md`. The frontend has the `/events` catalog (default route) and a `/events/new` form for the required event fields, but does not handle sign-in yet, so its API calls return `401` (see `frontend/AGENTS.md`)
+- Current state: walking skeleton (`GET /api/health`), Office 365 sign-in with server-side sessions and CSRF (`/api/auth/*`, migration `0003`), and the members-only catalog API for organisations, topics, faculties and events, including event create/update/cancel by the owning organisation, event subscriptions (migration `0004`), and change/cancellation emails sent by the `worker` service through Microsoft Graph (`MAIL_DRY_RUN=true` logs them instead). The frontend has the `/events` catalog (default route) and a `/events/new` form for the required event fields, but does not handle sign-in yet, so its API calls return `401` (see `frontend/AGENTS.md`)
 
 ## Core Contract
 
@@ -94,12 +94,13 @@ Current repo-wide rules:
 
 Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/commands.md`.
 
-- `make up`: build and start `frontend`, `backend`, `db`, `migrate` (creates `.env` from `.env.example`); UI at http://localhost:5173, API docs at http://localhost:8000/docs
+- `make up`: build and start `frontend`, `backend`, `db`, `migrate`, `worker` (creates `.env` from `.env.example`); UI at http://localhost:5173, API docs at http://localhost:8000/docs
 - `make check`: run Ruff, ESLint, TypeScript `checkJs`, backend pytest, API smoke test and frontend production build; the stack must be started with `make up` first
 - `make test args="-k health"`: backend tests only
 - `make migrate` / `make migration name=<slug> rev=<id>`: apply / create Alembic migrations
 - `make seed [file=<path>]`: apply one seed file (default `backend/seed/data.json`): organisations, topics, faculties, organiser `accounts`, events; `file=seed/data.example.json` loads fake dev data, including the team organiser accounts and one event per account (an event is inserted once that account has signed in; re-run `make seed` after signing in)
 - `make switch-org email=<all|email>`: dev-only switch of the team accounts listed in `accounts` of `backend/seed/data.example.json` between organiser and plain member
+- `make mail-login`: sign the team mailbox that sends notification emails in once, then set `MAIL_DRY_RUN=false`
 - `make logs service=<name>`, `make down`, `make help`
 
 ## Engineering Prohibitions
@@ -126,7 +127,7 @@ Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/co
 ## Child DOX Index
 
 - `docs/AGENTS.md` — requirements, user stories, requirement analysis, API contract, data model; when and how to read and maintain them
-- `backend/AGENTS.md` — FastAPI app, Office 365 auth and sessions, catalog modules and event create/update, SQLAlchemy/DB setup, Alembic migrations, seeder, pytest, temporary contract deviations
+- `backend/AGENTS.md` — FastAPI app, Office 365 auth and sessions, catalog modules and event create/update/cancel, subscriptions and the notification worker, SQLAlchemy/DB setup, Alembic migrations, seeder, pytest
 - `frontend/AGENTS.md` — React + Vite client, React Router pages (event catalog, create-event form), `/api` modules and proxy
 
 Owned by root (no child AGENTS.md):
@@ -134,8 +135,8 @@ Owned by root (no child AGENTS.md):
 - `README.md` — team, problem, solution, personas, value proposition, critical analysis, "Run locally"
 - `CLAUDE.md` — pointer to this file
 - `Makefile` — single entry point for executive commands (see `docs/commands.md`)
-- `compose.yaml` — local stack (`frontend`, `backend`, `db`, `migrate`); service layout documented in `docs/commands.md` §3
-- `.env.example` — local-only placeholder config (Postgres, `DB_PORT`, `FRONTEND_PORT`, `BACKEND_PORT`, `OIDC_*` app registration with an empty secret, `SESSION_SECRET`, `SESSION_MAX_AGE_DAYS`, `SESSION_IDLE_DAYS`, `COOKIE_SECURE`); `compose.yaml` refuses to start without `SESSION_SECRET`; `make up` copies it to the git-ignored `.env` only when `.env` is missing, so add new keys to an existing `.env` by hand
+- `compose.yaml` — local stack (`frontend`, `backend`, `db`, `migrate`, `worker`; volumes `db-data`, `mail-cache`); service layout documented in `docs/commands.md` §3
+- `.env.example` — local-only placeholder config (Postgres, `DB_PORT`, `FRONTEND_PORT`, `BACKEND_PORT`, `OIDC_*` app registration with an empty secret, `SESSION_SECRET`, `SESSION_MAX_AGE_DAYS`, `SESSION_IDLE_DAYS`, `COOKIE_SECURE`, `APP_PUBLIC_URL`, `MAIL_DRY_RUN`); `compose.yaml` refuses to start without `SESSION_SECRET`; `make up` copies it to the git-ignored `.env` only when `.env` is missing, so add new keys to an existing `.env` by hand
 - `raw_research_output/adr/` — ADR-001…007 (repo structure, UI, backend, data storage, auth, local runtime, event notifications)
 - `raw_research_output/p2/`, `raw_research_output/p3/` — historical practice outputs (audience analysis, VPC, critical analysis, user journey, story map, scope, MVP refinement, acceptance criteria)
 - `prompts/` — prompts for practice outputs 2.1–4.4, the walking skeleton (`4.5_scaffolding_skeleton.md`), frontend feature iterations (`5.1_frontend_iteration_1.md`, `5.2_frontend_iteration_2.md`), Practice 5 guardrail fixes (`5.2_fixing_and_refactoring.md`) and the AI code review (`5.4_ai_code_review.md`)

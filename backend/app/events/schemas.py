@@ -48,10 +48,18 @@ class EventDetailResponse(ApiModel):
     updated_at: UtcDateTime
     cancelled_at: UtcDateTime | None
     event_url: str
-    # Caller manages the owning organisation (C-02); set per request by the router
+    # Per caller, set by the router: manages the owning organisation (C-02) / has a subscription (US-45a)
     can_manage: bool = False
-    # Subscriptions are not implemented yet: always false (backend/AGENTS.md)
     subscribed: bool = False
+
+
+# api-contracts.md §6.5
+class EventCancelResponse(ApiModel):
+    id: uuid.UUID
+    status: str
+    revision: int
+    cancelled_at: UtcDateTime
+    event_url: str
 
 
 # api-contracts.md §5.1 editable fields. These DTOs check syntax and types only (400);
