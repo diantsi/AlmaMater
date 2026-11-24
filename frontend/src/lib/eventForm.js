@@ -14,23 +14,23 @@ export const METHOD_FIELD = {
 
 // Every form field in display order; keys are the camelCase request fields
 export const FIELD_LABELS = {
-  title: 'Title',
-  description: 'Description',
-  startsAt: 'Start date and time',
-  durationMinutes: 'Expected duration (minutes)',
-  speakerName: 'Speaker',
-  topicId: 'Topic',
-  facultyId: 'Faculty',
-  intendedAudience: 'Intended audience',
-  newcomersWelcome: 'Newcomers welcome',
-  format: 'Format',
-  venue: 'Venue',
-  meetingUrl: 'Meeting link',
-  participationMethod: 'Participation method',
-  googleFormUrl: 'Google Form link',
-  contactDetails: 'Contact details',
-  attendanceInstructions: 'Attendance instructions',
-  registrationDeadline: 'Registration deadline',
+  title: 'Назва',
+  description: 'Опис',
+  startsAt: 'Дата та час початку',
+  speakerName: 'Спікер',
+  durationMinutes: 'Тривалість, хв',
+  topicId: 'Тема',
+  facultyId: 'Факультет',
+  intendedAudience: 'Для кого',
+  newcomersWelcome: 'Чи можуть долучитися новачки?',
+  format: 'Формат',
+  venue: 'Місце проведення',
+  meetingUrl: 'Посилання на зустріч',
+  participationMethod: 'Спосіб участі',
+  googleFormUrl: 'Посилання на Google Form',
+  contactDetails: 'Контактні дані',
+  attendanceInstructions: 'Інструкції для участі',
+  registrationDeadline: 'Дедлайн реєстрації',
 };
 
 // Always shown, never required; an empty value is omitted from the payload (US-12c, US-16a/b, US-17c, US-21)
@@ -90,10 +90,10 @@ function isHttpsUrl(value) {
 
 // Message for one non-empty value, or null when it passes the client-side checks
 function formatError(field, value) {
-  if (HTTPS_FIELDS.has(field) && !isHttpsUrl(value)) return 'Enter a full link starting with https://.';
-  if (DATE_TIME_FIELDS.has(field) && !kyivLocalToIso(value)) return 'Enter a valid date and time.';
+  if (HTTPS_FIELDS.has(field) && !isHttpsUrl(value)) return 'Введіть повне посилання, що починається з https://.';
+  if (DATE_TIME_FIELDS.has(field) && !kyivLocalToIso(value)) return 'Введіть коректні дату та час.';
   if (field === 'durationMinutes' && !(/^\d+$/.test(value) && Number(value) > 0)) {
-    return 'Enter a whole number of minutes greater than zero.';
+    return 'Введіть ціле додатне число.';
   }
   return null;
 }
@@ -112,7 +112,7 @@ export function validate(values) {
   for (const field of activeFields(values)) {
     const value = values[field].trim();
     if (!value) {
-      if (!OPTIONAL_FIELDS.has(field)) errors[field] = [`${FIELD_LABELS[field]} is required.`];
+      if (!OPTIONAL_FIELDS.has(field)) errors[field] = ['Заповніть це поле.'];
       continue;
     }
     const message = formatError(field, value);
@@ -122,7 +122,7 @@ export function validate(values) {
   const startsAt = kyivLocalToIso(values.startsAt);
   const deadline = kyivLocalToIso(values.registrationDeadline);
   if (startsAt && deadline && Date.parse(deadline) > Date.parse(startsAt)) {
-    errors.registrationDeadline = ['The registration deadline must not be after the start.'];
+    errors.registrationDeadline = ['Дедлайн не може бути пізніше початку події.'];
   }
   return errors;
 }
@@ -171,7 +171,7 @@ export function buildPatch(values, initial) {
 }
 
 // Splits a failed publish or save into per-field messages (details[].field on a visible input) and form-level
-// messages; `action` names the attempt in generic messages, e.g. "Publication"
+// messages; `action` names the attempt in generic messages, e.g. "опублікувати подію"
 /**
  * @param {unknown} error
  * @param {Record<string, string>} values
@@ -183,8 +183,8 @@ export function submissionErrors(error, values, action) {
     // fetch rejects with a TypeError when the request never reaches the server
     const message =
       error instanceof TypeError
-        ? 'Could not reach the server. Check your connection and try again.'
-        : `${action} failed: ${error instanceof Error ? error.message : String(error)}`;
+        ? 'Не вдалося зв’язатися із сервером. Перевірте з’єднання та спробуйте ще раз.'
+        : `Не вдалося ${action}: ${error instanceof Error ? error.message : String(error)}`;
     return { fieldErrors: {}, formErrors: [message] };
   }
 
@@ -200,7 +200,7 @@ export function submissionErrors(error, values, action) {
     }
   }
   if (error.details.length === 0) {
-    formErrors.push(`${action} failed: ${error.message}`);
+    formErrors.push(`Не вдалося ${action}: ${error.message}`);
   }
   return { fieldErrors, formErrors };
 }

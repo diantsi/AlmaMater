@@ -2,7 +2,7 @@ COMPOSE := docker compose
 
 .DEFAULT_GOAL := help
 
-.PHONY: help up down restart logs ps backend-shell migrate migration seed switch-org mail-login test smoke frontend-build check frontend-lock db-shell db-reset backend-lint frontend-lint frontend-typecheck
+.PHONY: help up frontend-up down restart logs ps backend-shell migrate migration seed switch-org mail-login test smoke frontend-build check frontend-lock db-shell db-reset backend-lint frontend-lint frontend-typecheck
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-15s %s\n", $$1, $$2}'
@@ -12,6 +12,9 @@ help: ## List available targets
 
 up: .env ## Build and start the stack (frontend, backend, db, migrate, worker)
 	$(COMPOSE) up --build --detach --renew-anon-volumes
+
+frontend-up: .env ## Start only the frontend dev server (no backend, db or worker; /api calls fail)
+	$(COMPOSE) up --build --detach --renew-anon-volumes --no-deps frontend
 
 down: ## Stop the stack, keep the DB volume
 	$(COMPOSE) down

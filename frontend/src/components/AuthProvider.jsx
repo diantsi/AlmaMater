@@ -59,26 +59,26 @@ export default function AuthProvider({ children }) {
 
   if (result.state === 'loading') {
     return (
-      <main className="page">
-        <p className="status">Checking your session…</p>
+      <main className="page page-section">
+        <p className="status">Перевіряємо сесію…</p>
       </main>
     );
   }
   if (result.state === 'error') {
     return (
-      <main className="page">
+      <main className="page page-section">
         <p className="status status-error" role="alert">
-          Could not check your session: {result.message}
+          Не вдалося перевірити сесію: {result.message}
         </p>
         <button
           type="button"
-          className="button-primary"
+          className="clear clear--inline"
           onClick={() => {
             setResult({ state: 'loading' });
             setAttempt((count) => count + 1);
           }}
         >
-          Try again
+          Спробувати ще раз
         </button>
       </main>
     );

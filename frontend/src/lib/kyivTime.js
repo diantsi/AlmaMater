@@ -1,16 +1,6 @@
 // Event times are entered and shown in Europe/Kyiv, the timezone of catalog dates (api-contracts.md §2)
 const TIME_ZONE = 'Europe/Kyiv';
 
-const displayFormat = new Intl.DateTimeFormat('en-GB', {
-  timeZone: TIME_ZONE,
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
-
 const partsFormat = new Intl.DateTimeFormat('en-US', {
   timeZone: TIME_ZONE,
   hourCycle: 'h23',
@@ -22,20 +12,55 @@ const partsFormat = new Intl.DateTimeFormat('en-US', {
   second: 'numeric',
 });
 
+// Ukrainian month names: short for date stamps, genitive for full dates
+export const MONTHS_SHORT = ['січ', 'лют', 'бер', 'кві', 'тра', 'чер', 'лип', 'сер', 'вер', 'жов', 'лис', 'гру'];
+const MONTHS_GENITIVE = [
+  'січня',
+  'лютого',
+  'березня',
+  'квітня',
+  'травня',
+  'червня',
+  'липня',
+  'серпня',
+  'вересня',
+  'жовтня',
+  'листопада',
+  'грудня',
+];
+
+/**
+ * Full Kyiv date and time, e.g. "18 лютого 2027, 18:00"
+ * @param {string} iso
+ */
 export function formatKyivDateTime(iso) {
-  return displayFormat.format(new Date(iso));
+  const { year, month, day, time } = kyivDateParts(iso);
+  return `${day} ${MONTHS_GENITIVE[month - 1]} ${year}, ${time}`;
+}
+
+const pad = (n) => String(n).padStart(2, '0');
+
+/** @param {Date} date */
+function kyivParts(date) {
+  return Object.fromEntries(partsFormat.formatToParts(date).map(({ type, value }) => [type, Number(value)]));
+}
+
+/**
+ * Kyiv wall-clock parts of an instant for compact displays such as the catalog date stamp
+ * @param {string} iso
+ * @returns {{ year: number, month: number, day: number, time: string }} month is 1–12, time is HH:MM
+ */
+export function kyivDateParts(iso) {
+  const parts = kyivParts(new Date(iso));
+  return { year: parts.year, month: parts.month, day: parts.day, time: `${pad(parts.hour)}:${pad(parts.minute)}` };
 }
 
 // Minutes Kyiv is ahead of UTC at the given instant
 function kyivOffsetMinutes(ms) {
-  const parts = Object.fromEntries(
-    partsFormat.formatToParts(new Date(ms)).map(({ type, value }) => [type, Number(value)]),
-  );
+  const parts = kyivParts(new Date(ms));
   const wall = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
   return Math.round((wall - ms) / 60000);
 }
-
-const pad = (n) => String(n).padStart(2, '0');
 
 // `<input type="datetime-local">` value read as Kyiv wall time → RFC 3339 with offset, e.g. 2026-11-20T16:00:00+02:00
 export function kyivLocalToIso(local) {

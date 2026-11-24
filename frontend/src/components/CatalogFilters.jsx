@@ -25,15 +25,15 @@ function CheckboxGroup({legend, options, selected, onChange}) {
         <fieldset className="filter-group">
             <legend>
                 {legend}
-                {selected.length > 0 && <span className="filter-count"> ({selected.length} selected)</span>}
+                {selected.length > 0 && <span className="filter-count"> (обрано: {selected.length})</span>}
             </legend>
             {options.length === 0 ? (
-                <p className="hint">None available yet</p>
+                <p className="hint">Поки немає варіантів</p>
             ) : (
-                <ul>
+                <ul className="options">
                     {options.map((option) => (
                         <li key={option.id}>
-                            <label className="checkbox">
+                            <label className="check">
                                 <input
                                     type="checkbox"
                                     checked={selected.includes(option.id)}
@@ -50,8 +50,10 @@ function CheckboxGroup({legend, options, selected, onChange}) {
 }
 
 /**
- * Filter panel for the catalog; the URL owns the values, this component only reports changes
+ * Filter panel for the catalog; the URL owns the values, this component only reports changes.
+ * `open` shows the panel on narrow screens, where it is collapsed behind the "Фільтри" toggle
  * @param {{
+ *   open: boolean,
  *   filters: CatalogFilters,
  *   onChange: (next: CatalogFilters) => void,
  *   onClear: () => void,
@@ -59,7 +61,7 @@ function CheckboxGroup({legend, options, selected, onChange}) {
  * }} props
  * @param {import('react').ForwardedRef<HTMLHeadingElement>} ref
  */
-function CatalogFilters({filters, onChange, onClear, dateErrors}, ref) {
+function CatalogFilters({open, filters, onChange, onClear, dateErrors}, ref) {
     const [options, setOptions] = useState(/** @type {OptionsState} */ ({state: 'loading'}));
 
     useEffect(() => {
@@ -81,34 +83,40 @@ function CatalogFilters({filters, onChange, onClear, dateErrors}, ref) {
     });
 
     return (
-        <section className="filters" aria-labelledby="filters-title">
-            <h2 id="filters-title" ref={ref} tabIndex={-1}>
-                Filters
-            </h2>
+        <aside id="filters" className={open ? 'filters-panel open' : 'filters-panel'} aria-labelledby="filters-title">
+            <div className="filter-top">
+                <h2 id="filters-title" ref={ref} tabIndex={-1}>
+                    Фільтри
+                </h2>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 6h18M6 12h12m-8 6h4"/>
+                    <circle cx="8" cy="6" r="2" fill="#f5d54c"/>
+                    <circle cx="15" cy="12" r="2" fill="#d4ed68"/>
+                </svg>
+            </div>
 
-            {options.state === 'loading' && <p className="hint">Loading filter options…</p>}
+            {options.state === 'loading' && <p className="hint">Завантаження фільтрів…</p>}
             {options.state === 'error' && (
                 <p className="status status-error" role="alert">
-                    Could not load topics, faculties and organisations. Date filters still work.
+                    Не вдалося завантажити теми, факультети й організації. Фільтр за датою працює.
                 </p>
             )}
             {options.state === 'ok' && (
-                <div className="filter-groups">
-                    <CheckboxGroup legend="Topic" options={options.topics} {...listProps('topicId')}/>
-                    <CheckboxGroup legend="Faculty" options={options.faculties} {...listProps('facultyId')}/>
+                <>
+                    <CheckboxGroup legend="Тема" options={options.topics} {...listProps('topicId')}/>
+                    <CheckboxGroup legend="Факультет" options={options.faculties} {...listProps('facultyId')}/>
                     <CheckboxGroup
-                        legend="Organisation"
+                        legend="Організація"
                         options={options.organizations}
                         {...listProps('organizationId')}
                     />
-                </div>
+                </>
             )}
 
-            <fieldset className="filter-group filter-dates">
-                <legend>Start date</legend>
-                <p className="hint">Kyiv dates, both included. Leave either empty for an open range.</p>
-                <div className="filter-date-inputs">
-                    <Field id="dateFrom" label="From" required={false}>
+            <fieldset className="filter-group">
+                <legend>Дата початку</legend>
+                <div className="date-fields">
+                    <Field id="dateFrom" label="Від" required={false}>
                         {(controlProps) => (
                             <input
                                 {...controlProps}
@@ -119,7 +127,7 @@ function CatalogFilters({filters, onChange, onClear, dateErrors}, ref) {
                             />
                         )}
                     </Field>
-                    <Field id="dateTo" label="To" required={false} errors={dateErrors}>
+                    <Field id="dateTo" label="До" required={false} errors={dateErrors}>
                         {(controlProps) => (
                             <input
                                 {...controlProps}
@@ -131,17 +139,13 @@ function CatalogFilters({filters, onChange, onClear, dateErrors}, ref) {
                         )}
                     </Field>
                 </div>
+                <p className="date-hint">За київським часом, обидві дати включно.</p>
             </fieldset>
 
-            <button
-                type="button"
-                className="button-secondary"
-                onClick={onClear}
-                disabled={!hasActiveFilters(filters)}
-            >
-                Clear filters
+            <button type="button" className="clear" onClick={onClear} disabled={!hasActiveFilters(filters)}>
+                Очистити фільтри
             </button>
-        </section>
+        </aside>
     );
 }
 

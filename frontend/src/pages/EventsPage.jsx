@@ -1,12 +1,14 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 
-import {Link, useSearchParams} from 'react-router-dom';
+import {useSearchParams} from 'react-router-dom';
 
 import {fetchEvents} from '../api/events.js';
 import {useAuth} from '../components/AuthProvider.jsx';
+import {CreateEventButton, OrganizationName} from '../components/Organizer.jsx';
 import CatalogFilters from '../components/CatalogFilters.jsx';
-import EventCard from '../components/EventCard.jsx';
-import {filtersToParams, hasActiveFilters, NO_FILTERS, readFilters} from '../lib/catalogFilters.js';
+import EventCard, {useTopicCodes} from '../components/EventCard.jsx';
+import {countActiveFilters, filtersToParams, NO_FILTERS, readFilters} from '../lib/catalogFilters.js';
+import {eventCount} from '../lib/eventOptions.js';
 
 /**
  * @typedef {{
@@ -14,6 +16,7 @@ import {filtersToParams, hasActiveFilters, NO_FILTERS, readFilters} from '../lib
  *   title: string,
  *   startsAt: string,
  *   organizationName: string,
+ *   topicId: string,
  *   format: string,
  *   eventUrl: string
  * }} EventListItem
@@ -28,27 +31,6 @@ import {filtersToParams, hasActiveFilters, NO_FILTERS, readFilters} from '../lib
  */
 
 /** @typedef {import('../lib/catalogFilters.js').CatalogFilters} CatalogFiltersValue */
-
-// Organisation dashboard (US-02, US-07): shown only to the signed-in organiser of their own organisation
-function OrganizationDashboard() {
-    const {organization, canPublish} = useAuth();
-    if (!canPublish || !organization) return null;
-    return (
-        <section className="dashboard" aria-labelledby="dashboard-title">
-            <h2 id="dashboard-title">{organization.name}</h2>
-            <Link className="button-primary" to="/events/new">
-                Create event
-            </Link>
-        </section>
-    );
-}
-
-/** @param {number} count @param {boolean} filtered */
-function resultCount(count, filtered) {
-    const events = count === 1 ? '1 event' : `${count} events`;
-    if (!filtered) return count === 1 ? '1 upcoming event' : `${count} upcoming events`;
-    return `${events} ${count === 1 ? 'matches' : 'match'} your filters`;
-}
 
 // 422 VALIDATION_ERROR (dateFrom after dateTo): `dateTo` details go next to the date inputs, the rest above the results
 function toEventsError(error) {
@@ -67,11 +49,15 @@ function toEventsError(error) {
 }
 
 export default function EventsPage() {
+    const {organization, canPublish} = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     // Canonical query string: unrelated navigations (e.g. clearing router state) do not refetch
     const query = filtersToParams(readFilters(searchParams)).toString();
     const filters = useMemo(() => readFilters(new URLSearchParams(query)), [query]);
-    const filtered = hasActiveFilters(filters);
+    const activeFilters = countActiveFilters(filters);
+    const filtered = activeFilters > 0;
+    const [filtersOpen, setFiltersOpen] = useState(false);
+    const topicCodes = useTopicCodes();
     const filtersHeadingRef = useRef(/** @type {HTMLHeadingElement | null} */ (null));
 
     const [result, setResult] = useState(
@@ -97,69 +83,91 @@ export default function EventsPage() {
     };
 
     return (
-        <>
-            <OrganizationDashboard/>
-            <h1>Events</h1>
+        <div className="catalog">
+            {/* Organisation dashboard (US-02, US-07): only for the signed-in organiser of their own organisation */}
+            <div className="catalog-heading">
+                <div>
+                    <h1>Афіша</h1>
+                    {canPublish && organization && <OrganizationName name={organization.name}/>}
+                </div>
+                {canPublish && organization && <CreateEventButton/>}
+            </div>
+            <div className="catalog-mobile-bar">
+                <button
+                    type="button"
+                    className="filter-mobile"
+                    aria-expanded={filtersOpen}
+                    aria-controls="filters"
+                    onClick={() => setFiltersOpen((open) => !open)}
+                >
+                    ☷ Фільтри <span>{filtered && `(${activeFilters})`}</span>
+                </button>
+            </div>
 
             <div className="catalog-layout">
                 <CatalogFilters
                     ref={filtersHeadingRef}
+                    open={filtersOpen}
                     filters={filters}
                     onChange={changeFilters}
                     onClear={clearFilters}
                     dateErrors={result.state === 'invalid' ? result.dateErrors : []}
                 />
 
-                <div className="results" aria-busy={result.state === 'loading'}>
-                    {result.state === 'loading' && <p className="status">Loading events…</p>}
+                <section className="results" aria-label="Події" aria-busy={result.state === 'loading'}>
+                    {result.state === 'loading' && <p className="status">Завантаження подій…</p>}
                     {result.state === 'error' && (
                         <p className="status status-error" role="alert">
-                            Could not load events: {result.message}
+                            Не вдалося завантажити події: {result.message}
                         </p>
                     )}
                     {result.state === 'invalid' && (
                         <div className="status status-error" role="alert">
-                            <p>Check the date filters.</p>
+                            <p>Перевір дати у фільтрах.</p>
                             {result.messages.map((message, index) => (
                                 <p key={index}>{message}</p>
                             ))}
                         </div>
                     )}
                     {result.state === 'malformed' && (
-                        <div className="status status-error" role="alert">
-                            <p>This link contains filters that are not valid.</p>
-                            <button type="button" className="button-secondary" onClick={clearFilters}>
-                                Clear filters
+                        <div className="empty-state" role="alert">
+                            <p>Посилання містить недійсні фільтри.</p>
+                            <button type="button" className="clear" onClick={clearFilters}>
+                                Очистити фільтри
                             </button>
                         </div>
                     )}
                     {result.state === 'ok' && result.events.length === 0 && !filtered && (
-                        <p className="status">No upcoming events yet. Check back later.</p>
+                        <div className="empty-state">
+                            <p>Поки немає майбутніх подій.</p>
+                        </div>
                     )}
                     {result.state === 'ok' && result.events.length === 0 && filtered && (
-                        <div className="status" role="status">
-                            <p>No events match your filters.</p>
-                            <button type="button" className="button-secondary" onClick={clearFilters}>
-                                Clear filters
+                        <div className="empty-state" role="status">
+                            <p>За цими фільтрами подій немає.</p>
+                            <button type="button" className="clear" onClick={clearFilters}>
+                                Очистити фільтри
                             </button>
                         </div>
                     )}
                     {result.state === 'ok' && result.events.length > 0 && (
                         <>
-                            <p className="hint" role="status">
-                                {resultCount(result.events.length, filtered)}
-                            </p>
-                            <ul className="event-list">
+                            <div className="results-bar">
+                                <p className="count" role="status">
+                                    {eventCount(result.events.length)}
+                                </p>
+                            </div>
+                            <ul className="event-grid">
                                 {result.events.map((event) => (
                                     <li key={event.id}>
-                                        <EventCard event={event}/>
+                                        <EventCard event={event} topicCode={topicCodes[event.topicId]}/>
                                     </li>
                                 ))}
                             </ul>
                         </>
                     )}
-                </div>
+                </section>
             </div>
-        </>
+        </div>
     );
 }

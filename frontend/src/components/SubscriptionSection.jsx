@@ -5,9 +5,9 @@ import { ApiError } from '../api/http.js';
 
 /** @param {unknown} error */
 function subscriptionErrorMessage(error) {
-  if (error instanceof ApiError && error.code === 'EVENT_NOT_FOUND') return 'This event no longer exists.';
-  if (error instanceof TypeError) return 'Could not reach the server. Check your connection and try again.';
-  return `Could not update email updates: ${error instanceof Error ? error.message : String(error)}`;
+  if (error instanceof ApiError && error.code === 'EVENT_NOT_FOUND') return 'Цієї події більше не існує.';
+  if (error instanceof TypeError) return 'Не вдалося зв’язатися із сервером. Перевірте з’єднання та спробуйте ще раз.';
+  return `Не вдалося змінити сповіщення: ${error instanceof Error ? error.message : String(error)}`;
 }
 
 /**
@@ -51,21 +51,20 @@ export default function SubscriptionSection({ eventId, subscribed, onChange, onN
   }
 
   return (
-    <section className="details-section subscription" aria-labelledby="subscription-heading">
-      <h2 id="subscription-heading">Email updates</h2>
+    <section className="paper-panel subscription" aria-labelledby="subscription-heading">
+      <h2 id="subscription-heading">Сповіщення</h2>
       <p>
         {subscribed
-          ? 'You will get an email at your university address if this event is changed or cancelled.'
-          : 'Get an email at your university address if this event is changed or cancelled.'}{' '}
-        This does not register you for the event.
+          ? 'Ви отримаєте лист на університетську пошту, якщо подію змінять або скасують.'
+          : 'Отримуйте лист на університетську пошту, якщо подію змінять або скасують.'}{' '}
+        Це не реєстрація на подію.
       </p>
-      <button
-        type="button"
-        className="button-secondary"
-        disabled={pending}
-        onClick={toggle}
-      >
-        {pending ? 'Saving…' : subscribed ? 'Stop email updates' : 'Email me about changes'}
+      <button type="button" className="button join-button join-button--plain" disabled={pending} onClick={toggle}>
+        {pending ? 'Зберігаємо…' : subscribed ? 'Вимкнути сповіщення' : 'Повідомляти про зміни'}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="14" rx="3" />
+          <path d="m4 7 8 6 8-6" />
+        </svg>
       </button>
       {error && (
         <p className="status status-error" role="alert">

@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { fetchFaculties, fetchTopics } from '../api/dictionaries.js';
 import { createEvent } from '../api/events.js';
 import { useAuth } from '../components/AuthProvider.jsx';
-import EventForm from '../components/EventForm.jsx';
+import EventForm, { EventFormHeading } from '../components/EventForm.jsx';
+import PageNotice from '../components/PageNotice.jsx';
 import PublicationConfirmation from '../components/PublicationConfirmation.jsx';
 import { EMPTY_VALUES, buildPayload, submissionErrors } from '../lib/eventForm.js';
 
@@ -16,13 +17,9 @@ export default function CreateEventPage() {
   const { canPublish, organization } = useAuth();
   if (!canPublish) {
     return (
-      <>
-        <h1>Create event</h1>
-        <p className="status status-error" role="alert">
-          You do not have access to event creation. Only a registered student organisation account can publish
-          events.
-        </p>
-      </>
+      <PageNotice title="Створити подію">
+        Створення подій недоступне. Публікувати події може лише зареєстрований акаунт студентської організації.
+      </PageNotice>
     );
   }
   return <CreateEvent organizationName={organization?.name ?? ''} />;
@@ -53,7 +50,7 @@ function CreateEvent({ organizationName }) {
       setPublished(await createEvent(buildPayload(values)));
       return null;
     } catch (error) {
-      return submissionErrors(error, values, 'Publication');
+      return submissionErrors(error, values, 'опублікувати подію');
     }
   }
 
@@ -62,13 +59,22 @@ function CreateEvent({ organizationName }) {
   }
 
   return (
-    <>
-      <h1>Create event</h1>
+    <div className="create-page">
+      <EventFormHeading
+        backTo="/events"
+        backLabel="До афіші"
+        title="Створити подію"
+        meta={
+          <span className="publisher">
+            <span className="publisher-dot" aria-hidden="true" /> Публікуєте від імені <strong>{organizationName}</strong>
+          </span>
+        }
+      />
 
-      {reference.state === 'loading' && <p className="status">Loading form options…</p>}
+      {reference.state === 'loading' && <p className="status">Завантаження форми…</p>}
       {reference.state === 'error' && (
         <p className="status status-error" role="alert">
-          Could not load form options: {reference.message}
+          Не вдалося завантажити теми й факультети: {reference.message}
         </p>
       )}
       {reference.state === 'ok' && (
@@ -76,16 +82,12 @@ function CreateEvent({ organizationName }) {
           initialValues={EMPTY_VALUES}
           topics={reference.topics}
           faculties={reference.faculties}
-          intro={
-            <p>
-              Publishing as <strong>{organizationName}</strong>.
-            </p>
-          }
-          submitLabel="Publish"
-          pendingLabel="Publishing…"
+          cancelTo="/events"
+          submitLabel="Опублікувати"
+          pendingLabel="Публікуємо…"
           onSubmit={publish}
         />
       )}
-    </>
+    </div>
   );
 }

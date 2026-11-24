@@ -5,8 +5,8 @@ import { Link } from 'react-router-dom';
 
 const COPY_MESSAGES = {
   idle: '',
-  copied: 'Link copied.',
-  failed: 'Could not copy automatically. Select the link and copy it.',
+  copied: 'Посилання скопійовано.',
+  failed: 'Не вдалося скопіювати автоматично. Виділіть посилання й скопіюйте його вручну.',
 };
 
 /**
@@ -35,49 +35,55 @@ export default function PublicationConfirmation({ event, onCreateAnother }) {
   }
 
   return (
-    <section className="confirmation" aria-labelledby="confirmation-title">
-      <h1 id="confirmation-title" ref={headingRef} tabIndex={-1}>
-        Event published
-      </h1>
-      <p className="status status-ok">
-        “{event.title}” is live on the Events page. Signed-in university members can now find it.
-      </p>
-
-      <p className="confirmation-actions">
-        <Link className="button-primary" to={event.eventUrl}>
-          View event
-        </Link>
-        <Link to="/events">Go to events</Link>
-      </p>
-
-      <div className="field">
-        <label htmlFor="share-link">Share link</label>
-        <p id="share-link-hint" className="hint">
-          Opens the event for signed-in university members.
-        </p>
-        <div className="share-link">
-          <input
-            id="share-link"
-            type="url"
-            readOnly
-            value={shareUrl}
-            aria-describedby="share-link-hint"
-            onFocus={(e) => e.target.select()}
-          />
-          <button type="button" className="button-secondary" onClick={copyLink}>
-            Copy link
-          </button>
+    <div className="create-page">
+      <section className="confirmation paper-panel" aria-labelledby="confirmation-title">
+        <div className="create-heading">
+          <h1 id="confirmation-title" ref={headingRef} tabIndex={-1}>
+            Подію опубліковано
+          </h1>
         </div>
-        <p className="hint" role="status">
-          {COPY_MESSAGES[copyState]}
+        <p className="form-message ok">
+          «{event.title}» уже в афіші. Авторизовані учасники університету можуть її знайти.
         </p>
-      </div>
 
-      <p>
-        <button type="button" className="button-secondary" onClick={onCreateAnother}>
-          Create another event
-        </button>
-      </p>
-    </section>
+        <div className="form-field">
+          <label htmlFor="share-link">Посилання для поширення</label>
+          <div className="share-row">
+            <input
+              id="share-link"
+              type="url"
+              readOnly
+              value={shareUrl}
+              aria-describedby="share-link-hint"
+              onFocus={(e) => e.target.select()}
+            />
+            <button type="button" className="clear clear--inline" onClick={copyLink}>
+              Скопіювати
+            </button>
+          </div>
+          <span id="share-link-hint" className="field-hint">
+            Відкриває подію для авторизованих учасників університету.
+          </span>
+          <span className="field-hint" role="status">
+            {COPY_MESSAGES[copyState]}
+          </span>
+        </div>
+
+        <div className="form-bottom">
+          <button type="button" className="cancel-link" onClick={onCreateAnother}>
+            Створити ще одну подію
+          </button>
+          <Link className="cancel-link" to="/events">
+            До афіші
+          </Link>
+          <Link className="button publish-button" to={event.eventUrl}>
+            Переглянути подію
+            <svg className="arrow" aria-hidden="true">
+              <use href="#arrow" />
+            </svg>
+          </Link>
+        </div>
+      </section>
+    </div>
   );
 }

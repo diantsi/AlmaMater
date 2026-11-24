@@ -52,7 +52,16 @@ export function filtersToParams(filters) {
   return params;
 }
 
+/**
+ * Number of selected values across all filters
+ * @param {CatalogFilters} filters
+ */
+export function countActiveFilters(filters) {
+  const lists = LIST_FILTERS.reduce((sum, key) => sum + filters[key].length, 0);
+  return lists + DATE_FILTERS.filter((key) => filters[key] !== '').length;
+}
+
 /** @param {CatalogFilters} filters */
 export function hasActiveFilters(filters) {
-  return LIST_FILTERS.some((key) => filters[key].length > 0) || DATE_FILTERS.some((key) => filters[key] !== '');
+  return countActiveFilters(filters) > 0;
 }

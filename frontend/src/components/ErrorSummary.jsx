@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 
-// Every issue of a failed publication: field issues link to their input, form-level issues are listed as text
+// Every issue of a failed submit: field issues link to their input, form-level issues are listed as text
 
 /**
  * @param {{ fieldErrors: Record<string, string[]>, formErrors: string[], labels: Record<string, string> }} props
@@ -10,8 +10,7 @@ function ErrorSummary({ fieldErrors, formErrors, labels }, ref) {
   const fieldItems = Object.keys(labels).flatMap((field) =>
     (fieldErrors[field] ?? []).map((message) => ({ field, message })),
   );
-  const count = fieldItems.length + formErrors.length;
-  if (count === 0) return null;
+  if (fieldItems.length + formErrors.length === 0) return null;
 
   const focusField = (event, field) => {
     event.preventDefault();
@@ -21,8 +20,10 @@ function ErrorSummary({ fieldErrors, formErrors, labels }, ref) {
   };
 
   return (
-    <div ref={ref} className="error-summary" role="alert" tabIndex={-1}>
-      <h2>{count === 1 ? 'There is 1 problem' : `There are ${count} problems`}</h2>
+    <div ref={ref} className="form-message" role="alert" tabIndex={-1}>
+      {fieldItems.length > 0
+        ? 'Перевірте виділені поля — не всі обов’язкові дані заповнено правильно.'
+        : 'Подію не збережено.'}
       <ul>
         {fieldItems.map(({ field, message }, index) => (
           <li key={`${field}-${index}`}>

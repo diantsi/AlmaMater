@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { fetchFaculties, fetchTopics } from '../api/dictionaries.js';
 import { fetchEvent, updateEvent } from '../api/events.js';
 import { ApiError } from '../api/http.js';
-import EventForm from '../components/EventForm.jsx';
+import EventForm, { EventFormHeading } from '../components/EventForm.jsx';
+import PageNotice from '../components/PageNotice.jsx';
 import { buildPatch, submissionErrors, valuesFromEvent } from '../lib/eventForm.js';
 
 /** @typedef {import('../components/EventForm.jsx').ReferenceOption} ReferenceOption */
@@ -19,27 +20,13 @@ import { buildPatch, submissionErrors, valuesFromEvent } from '../lib/eventForm.
 
 // Messages for the §6.4 errors that are about the event, not about one field
 const CONFLICT_MESSAGES = {
-  EVENT_REVISION_CONFLICT:
-    'This event was changed after you opened it. Reload the latest version and make your changes again.',
-  EVENT_NOT_EDITABLE: 'This event was cancelled or has already started, so it can no longer be edited.',
-  ORGANIZATION_ACCESS_DENIED: 'Only the organisation that published this event can edit it.',
-  EVENT_NOT_FOUND: 'This event no longer exists.',
+  EVENT_REVISION_CONFLICT: 'Подію змінили після того, як ви її відкрили. Завантажте актуальну версію й внесіть зміни ще раз.',
+  EVENT_NOT_EDITABLE: 'Подію скасовано або вона вже почалася, тому її більше не можна редагувати.',
+  ORGANIZATION_ACCESS_DENIED: 'Редагувати подію може лише організація, яка її опублікувала.',
+  EVENT_NOT_FOUND: 'Цієї події більше не існує.',
 };
 
-/** @param {{ title: string, children: import('react').ReactNode, eventUrl?: string }} props */
-function Notice({ title, children, eventUrl }) {
-  return (
-    <>
-      <h1>{title}</h1>
-      <p className="status status-error" role="alert">
-        {children}
-      </p>
-      <p>
-        {eventUrl ? <Link to={eventUrl}>Back to the event</Link> : <Link to="/events">Back to events</Link>}
-      </p>
-    </>
-  );
-}
+const DASHBOARD = '/organisation';
 
 // Edit a published event in place (US-44a) through PATCH /api/events/{id}; the event keeps its id and eventUrl
 export default function EditEventPage() {
@@ -70,27 +57,33 @@ export default function EditEventPage() {
     };
   }, [eventId, reloads]);
 
-  if (result.state === 'loading') return <p className="status">Loading event…</p>;
+  if (result.state === 'loading') {
+    return (
+      <PageNotice role="status" backTo={DASHBOARD} backLabel="До моїх подій">
+        Завантаження події…
+      </PageNotice>
+    );
+  }
   if (result.state === 'not-found') {
-    return <Notice title="Event not found">No event exists at this link.</Notice>;
+    return <PageNotice title="Подію не знайдено">За цим посиланням немає події.</PageNotice>;
   }
   if (result.state === 'error') {
-    return <Notice title="Edit event">Could not load the event: {result.message}</Notice>;
+    return <PageNotice title="Редагувати подію">Не вдалося завантажити подію: {result.message}</PageNotice>;
   }
 
   const { event, topics, faculties } = result;
   if (!event.canManage) {
     return (
-      <Notice title="Edit event" eventUrl={event.eventUrl}>
-        You do not have access to editing this event. Only the organisation that published it can change it.
-      </Notice>
+      <PageNotice title="Редагувати подію" backTo={event.eventUrl} backLabel="До події">
+        Редагування недоступне. Змінювати подію може лише організація, яка її опублікувала.
+      </PageNotice>
     );
   }
   if (event.status === 'CANCELLED' || new Date(event.startsAt).getTime() <= Date.now()) {
     return (
-      <Notice title="Edit event" eventUrl={event.eventUrl}>
-        This event was cancelled or has already started, so it can no longer be edited.
-      </Notice>
+      <PageNotice title="Редагувати подію" backTo={event.eventUrl} backLabel="До події">
+        Подію скасовано або вона вже почалася, тому її більше не можна редагувати.
+      </PageNotice>
     );
   }
 
@@ -103,11 +96,11 @@ export default function EditEventPage() {
   async function save(values) {
     const patch = buildPatch(values, initialValues);
     if (Object.keys(patch).length === 0) {
-      return { fieldErrors: {}, formErrors: ['You have not changed anything yet.'] };
+      return { fieldErrors: {}, formErrors: ['Ви ще нічого не змінили.'] };
     }
     try {
       const updated = await updateEvent(event.id, { revision: event.revision, ...patch });
-      navigate(updated.eventUrl, { state: { notice: 'Changes saved.' } });
+      navigate(updated.eventUrl, { state: { notice: 'Зміни збережено.' } });
       return null;
     } catch (error) {
       if (error instanceof ApiError && error.code in CONFLICT_MESSAGES) {
@@ -115,22 +108,29 @@ export default function EditEventPage() {
         return { fieldErrors: {}, formErrors: [CONFLICT_MESSAGES[error.code]] };
       }
       // A rejected edit changes nothing on the server; the entered values stay for correction (US-44a AC2)
-      return submissionErrors(error, values, 'Saving');
+      return submissionErrors(error, values, 'зберегти зміни');
     }
   }
 
   return (
-    <>
-      <p>
-        <Link to={event.eventUrl}>← Back to the event</Link>
-      </p>
-      <h1>Edit event</h1>
+    <div className="create-page">
+      <EventFormHeading
+        backTo={DASHBOARD}
+        backLabel="До моїх подій"
+        title="Редагувати подію"
+        meta={
+          <span className="publisher publisher--published">
+            <span className="publisher-dot" aria-hidden="true" />
+            <strong>{event.organizationName}</strong> · Опубліковано
+          </span>
+        }
+      />
 
       {conflict && (
-        <div className="status status-error conflict">
-          <p>Someone saved a newer version of this event. Reloading shows it and discards your unsaved changes.</p>
-          <button type="button" className="button-secondary" onClick={() => setReloads((count) => count + 1)}>
-            Reload latest version
+        <div className="form-message">
+          <p>Хтось зберіг новішу версію події. Після оновлення ви побачите її, а незбережені зміни буде втрачено.</p>
+          <button type="button" className="clear clear--inline" onClick={() => setReloads((count) => count + 1)}>
+            Завантажити актуальну версію
           </button>
         </div>
       )}
@@ -140,16 +140,11 @@ export default function EditEventPage() {
         initialValues={initialValues}
         topics={topics}
         faculties={faculties}
-        intro={
-          <p>
-            Editing as <strong>{event.organizationName}</strong>. Saved changes appear at the same event link.
-          </p>
-        }
-        actions={<Link to={event.eventUrl}>Discard changes</Link>}
-        submitLabel="Save changes"
-        pendingLabel="Saving…"
+        cancelTo={DASHBOARD}
+        submitLabel="Зберегти зміни"
+        pendingLabel="Зберігаємо…"
         onSubmit={save}
       />
-    </>
+    </div>
   );
 }
