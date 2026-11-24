@@ -10,7 +10,9 @@ from pydantic import (
     model_validator,
 )
 
-NonBlank = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+from app.auth.service import UNIVERSITY_DOMAIN
+
+NonBlank =Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 
 def _lower_email(value: str) -> str:
@@ -40,6 +42,35 @@ class DictionarySeed(SeedModel):
 
 def _duplicates(values: list[str]) -> set[str]:
     return {value for value, count in Counter(values).items() if count > 1}
+
+
+def _university_email(value: str) -> str:
+    # A bare login such as "o.skoromnov" means the university address
+    if "@" not in value:
+        value = f"{value.strip()}@{UNIVERSITY_DOMAIN}"
+    value = _lower_email(value)
+    if value.partition("@")[2] != UNIVERSITY_DOMAIN:
+        raise ValueError(f"must be an @{UNIVERSITY_DOMAIN} address (only those can sign in)")
+    return value
+
+
+UniversityEmail = Annotated[str, Field(max_length=300), AfterValidator(_university_email)]
+
+
+# Development-only organiser toggle (make seed org / make switch-org), not part of the organisation register
+class OrganiserAccount(SeedModel):
+    email: UniversityEmail
+    is_org: bool
+
+
+class OrganiserFile(SeedModel):
+    accounts: list[OrganiserAccount] = []
+
+    @model_validator(mode="after")
+    def _unique_emails(self) -> "OrganiserFile":
+        if duplicates := _duplicates([account.email for account in self.accounts]):
+            raise ValueError(f"duplicate accounts.email: {', '.join(sorted(duplicates))}")
+        return self
 
 
 class SeedFile(SeedModel):

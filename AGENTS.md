@@ -99,6 +99,7 @@ Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/co
 - `make test args="-k health"`: backend tests only
 - `make migrate` / `make migration name=<slug> rev=<id>`: apply / create Alembic migrations
 - `make seed [file=<path>]`: upsert seed data from `backend/seed/data.json`; `file=seed/data.example.json` loads fake dev data
+- `make seed org` / `make switch-org email=<all|email>`: dev-only switch of the team accounts listed in `backend/seed/organisations.example.json` between organiser and plain member
 - `make logs service=<name>`, `make down`, `make help`
 
 ## Engineering Prohibitions

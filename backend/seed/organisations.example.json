@@ -1,0 +1,10 @@
+{
+  "accounts": [
+    {"email": "o.skoromnov@ukma.edu.ua", "is_org": true},
+    {"email": "vo.melnyk@ukma.edu.ua", "is_org": true},
+    {"email": "a.dmytrokhina@ukma.edu.ua", "is_org": true},
+    {"email": "d.tsisaruk@ukma.edu.ua", "is_org": true},
+    {"email": "v.romaniuk@ukma.edu.ua", "is_org": true},
+    {"email": "d.shyn@ukma.edu.ua", "is_org": true}
+  ]
+}

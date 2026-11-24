@@ -7,7 +7,7 @@
 
 ## Ownership
 
-- Owns everything under `backend/`: `app/`, `alembic/`, `seed/`, `alembic.ini`, `tests/`, `pyproject.toml`, `Dockerfile`, `todo-user-stories.md`
+- Owns everything under `backend/`: `app/`, `alembic/`, `seed/` (`data.example.json`, `organisations.example.json`), `alembic.ini`, `tests/`, `pyproject.toml`, `Dockerfile`, `todo-user-stories.md`
 - `todo-user-stories.md` is the list of user stories whose backend part is unfinished; update it whenever backend story work lands or new backend gaps are found (frontend gaps belong in `frontend/AGENTS.md`)
 - API and data contracts are owned by `docs/` (`api-contracts.md`, `database-schema.md`); this folder implements them
 
@@ -19,7 +19,7 @@
   - `app/organisations/` — `Organization` model, `GET /api/organizations`
   - `app/dictionaries/` — `Topic`, `Faculty` models, `GET /api/topics`, `GET /api/faculties`
   - `app/events/` — `Event` model + status/format/method `StrEnum`s, `GET /api/events` (§6.1 filters), `GET /api/events/{eventId}`, `POST /api/events` (§6.3), `PATCH /api/events/{eventId}` (§6.4); catalog query and write logic in `service.py`
-  - `app/seed/` — `seeder.py` (CLI behind `make seed`) + `schemas.py` (`SeedFile` validation); no routes
+  - `app/seed/` — `seeder.py` (CLI behind `make seed`), `organisers.py` (dev-only organiser toggle behind `make seed org` / `make switch-org`) + `schemas.py` (`SeedFile`, `OrganiserFile` validation); no routes
   - future `notifications/`
 - Each module keeps SQLAlchemy models in `models.py`, routes in `router.py` and Pydantic DTOs in `schemas.py`; write/business logic goes in an optional `service.py`, routers stay thin
 - `app/schemas.py`: `ApiModel` base (camelCase aliases, `from_attributes`) and `UtcDateTime` (serialises as UTC `…Z`) for all response DTOs; `ApiRequest` base (camelCase only, `extra="forbid"`) for request DTOs
@@ -36,6 +36,7 @@
 - DB CHECK constraints are named `ck_<table>_<rule>`; enum values live only in `app/events/models.py`
 - Seed data: `make seed [file=<path>]` upserts organisations (by `slug`), topics and faculties (by `code`) from `seed/data.json` (path relative to `backend/`) in one transaction; rows absent from the file are never deleted. Events are not seeded: each needs the signed-in user who published it (`created_by_user_id`), so they are created through `POST /api/events`
 - Seed validation (`app/seed/schemas.py`): emails lowercased; duplicate keys and unknown fields (including `events`) rejected
+- Test organisers (development only, C-02 has no role column): `seed/organisations.example.json` lists team `@ukma.edu.ua` accounts as `{"accounts": [{"email", "is_org"}]}`; `set_organiser` grants by re-enabling the organisation at `<email>.disabled` or creating `Test organisation (<local part>)` (slug `test-<local part>`), and revokes by renaming the address to `<email>.disabled` (never deletes, so events survive). `make seed org` applies each `is_org`; `make switch-org email=<all|email>` flips the current state and refuses accounts not listed in the file. All rows apply in one transaction; only `@ukma.edu.ua` emails are accepted and a bare login (`o.skoromnov`) gets that domain appended
 - `seed/data.json` holds only team-supplied real values and does not exist until they arrive; `seed/data.example.json` holds fake dev data (3 organisations, topics and faculties, `Example`/`example.test` names) for `make seed file=seed/data.example.json` and must never be treated as real data
 - No `__init__.py` files (namespace packages); always use full-path imports such as `from app.health.schemas import HealthResponse`
 - `GET /api/health` is anonymous liveness only and returns `{"status": "ok", "service": "almamater-api"}` (`api-contracts.md` §8); it must not claim to check the DB
@@ -60,7 +61,7 @@
   - `tests/conftest.py` — `db` fixture (outer transaction rolled back per test), anonymous `client` (overrides `get_db`), `member_client` / `manager_client` + `manager_org` (signed in, CSRF header set), `sign_in()` / `new_client()` helpers, `make_*` factories for test-only rows (`make_user`, `make_event(created_by=…)`)
   - `tests/test_health.py` (health contract), `tests/test_db.py` (`SELECT 1`, `alembic_version == "0003"`)
   - `tests/test_auth.py` (fake provider: login redirect + PKCE, `returnTo` safety, callback success and rotation, invalid signature/issuer/audience/expiry/nonce/state, provider error, non-university email, `me`, expired/idle/revoked sessions, logout + CSRF, 401 on every protected route)
-  - `tests/test_seed.py` (upsert, idempotency, seed file validation, example file validity)
+  - `tests/test_seed.py` (upsert, idempotency, seed file validation, example file validity), `tests/test_organisers.py` (grant creates/re-enables, revoke keeps organisation and events, `canPublish` follows the toggle, switch flips state and only targets listed accounts, organiser file validation)
   - `tests/test_organisations.py`, `tests/test_dictionaries.py`, `tests/test_events.py` (filters, Kyiv date range, lifecycle visibility, error envelope)
   - `tests/test_events_write.py` (create/update: 201 + `Location`, all-errors-at-once 422, conditional fields, 400 for unknown/immutable fields and bad syntax, revision bump, no-op edit, 409 stale revision / not editable, 404, creator + session organisation, 403 for non-managers / other organisations / bad CSRF, `canManage`)
 
