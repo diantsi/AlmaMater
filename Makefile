@@ -2,7 +2,7 @@ COMPOSE := docker compose
 
 .DEFAULT_GOAL := help
 
-.PHONY: help up down restart logs ps backend-shell migrate migration seed org switch-org test smoke frontend-build check frontend-lock db-shell db-reset backend-lint frontend-lint frontend-typecheck
+.PHONY: help up down restart logs ps backend-shell migrate migration seed switch-org test smoke frontend-build check frontend-lock db-shell db-reset backend-lint frontend-lint frontend-typecheck
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-15s %s\n", $$1, $$2}'
@@ -34,19 +34,12 @@ migration: .env ## Create an Alembic revision; requires name=<slug>, optional re
 	@test -n "$(name)" || (echo "usage: make migration name=<slug> [rev=<id>]" && exit 1)
 	$(COMPOSE) run --rm backend alembic revision --autogenerate -m "$(name)" $(if $(rev),--rev-id "$(rev)")
 
-# `make seed org` seeds test organiser accounts instead of reference data
-SEED_ORG := $(and $(filter seed,$(MAKECMDGOALS)),$(filter org,$(MAKECMDGOALS)))
+seed: .env ## Apply a seed file (default seed/data.json): organisations, topics, faculties, organiser accounts, events; optional file=<path>
+	$(COMPOSE) run --rm backend python -m app.seed.seeder $(if $(file),--file "$(file)")
 
-seed: .env ## Upsert reference data (default seed/data.json); `make seed org` applies seed/organisations.example.json; optional file=<path>
-	$(COMPOSE) run --rm backend python -m app.seed.$(if $(SEED_ORG),organisers,seeder) $(if $(file),--file "$(file)")
-
-# Only a goal marker for `make seed org`
-org:
-	@:
-
-switch-org: .env ## Dev only: flip organiser rights of email=<all|email> listed in backend/seed/organisations.example.json
+switch-org: .env ## Dev only: flip organiser rights of email=<all|email> listed in `accounts` of backend/seed/data.example.json
 	@test -n "$(email)" || (echo "usage: make switch-org email=<all|email|login> (run from the repo root)" && exit 1)
-	$(COMPOSE) run --rm backend python -m app.seed.organisers --switch "$(email)" $(if $(file),--file "$(file)")
+	$(COMPOSE) run --rm backend python -m app.seed.seeder --switch "$(email)" $(if $(file),--file "$(file)")
 
 test: .env ## Run backend tests against PostgreSQL; args= passed to pytest
 	$(COMPOSE) run --rm backend pytest $(args)

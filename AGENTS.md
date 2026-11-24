@@ -98,8 +98,8 @@ Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/co
 - `make check`: run Ruff, ESLint, TypeScript `checkJs`, backend pytest, API smoke test and frontend production build; the stack must be started with `make up` first
 - `make test args="-k health"`: backend tests only
 - `make migrate` / `make migration name=<slug> rev=<id>`: apply / create Alembic migrations
-- `make seed [file=<path>]`: upsert seed data from `backend/seed/data.json`; `file=seed/data.example.json` loads fake dev data
-- `make seed org` / `make switch-org email=<all|email>`: dev-only switch of the team accounts listed in `backend/seed/organisations.example.json` between organiser and plain member
+- `make seed [file=<path>]`: apply one seed file (default `backend/seed/data.json`): organisations, topics, faculties, organiser `accounts`, events; `file=seed/data.example.json` loads fake dev data, including the team organiser accounts and one event per account (an event is inserted once that account has signed in; re-run `make seed` after signing in)
+- `make switch-org email=<all|email>`: dev-only switch of the team accounts listed in `accounts` of `backend/seed/data.example.json` between organiser and plain member
 - `make logs service=<name>`, `make down`, `make help`
 
 ## Engineering Prohibitions

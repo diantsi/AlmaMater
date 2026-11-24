@@ -8,13 +8,13 @@ from sqlalchemy.orm import Session
 
 from app.auth.service import SignInRejected, eligible_identity
 from app.organisations.models import Organization
-from app.seed.organisers import (
+from app.seed.schemas import OrganiserAccount, SeedFile
+from app.seed.seeder import (
     DISABLED_SUFFIX,
     _switch_targets,
     set_organiser,
     switch_organiser,
 )
-from app.seed.schemas import OrganiserAccount, OrganiserFile
 from tests.conftest import (
     make_event,
     make_faculty,
@@ -109,16 +109,16 @@ def test_revoke_plain_member_is_noop(db: Session):
 )
 def test_organiser_file_rejects_invalid_data(payload: dict):
     with pytest.raises(ValidationError):
-        OrganiserFile.model_validate(payload)
+        SeedFile.model_validate(payload)
 
 
 def test_bare_login_means_university_address():
-    data = OrganiserFile.model_validate({"accounts": [{"email": " Test.Organiser ", "is_org": True}]})
+    data = SeedFile.model_validate({"accounts": [{"email": " Test.Organiser ", "is_org": True}]})
 
     assert data.accounts[0].email == EMAIL
 
 
-def test_organiser_seed_file_is_valid():
-    data = OrganiserFile.model_validate_json(Path("seed/organisations.example.json").read_text(encoding="utf-8"))
+def test_example_seed_file_accounts_are_valid():
+    data = SeedFile.model_validate_json(Path("seed/data.example.json").read_text(encoding="utf-8"))
 
     assert data.accounts and all(account.email.endswith("@ukma.edu.ua") for account in data.accounts)
