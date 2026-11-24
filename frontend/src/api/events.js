@@ -1,5 +1,5 @@
 import { filtersToParams, NO_FILTERS } from '../lib/catalogFilters.js';
-import { getJson, patchJson, postJson } from './http.js';
+import { deleteJson, getJson, patchJson, postJson, putJson } from './http.js';
 
 /**
  * api-contracts.md §6.1: active upcoming events matching the filters, ascending by start
@@ -29,4 +29,14 @@ export function updateEvent(eventId, patch) {
 // api-contracts.md §6.5: no body; resolves with `{ id, status, revision, cancelledAt, eventUrl }` only on 200
 export function cancelEvent(eventId) {
   return postJson(`/api/events/${encodeURIComponent(eventId)}/cancel`, undefined, 200);
+}
+
+// api-contracts.md §6.6: idempotent; resolves with `{ eventId, subscribed: true }` only on 200
+export function subscribe(eventId) {
+  return putJson(`/api/events/${encodeURIComponent(eventId)}/subscription`, 200);
+}
+
+// api-contracts.md §6.7: idempotent; resolves with null only on 204
+export function unsubscribe(eventId) {
+  return deleteJson(`/api/events/${encodeURIComponent(eventId)}/subscription`, 204);
 }

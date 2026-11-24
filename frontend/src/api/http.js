@@ -93,3 +93,20 @@ export function patchJson(path, body) {
     body: JSON.stringify(body),
   });
 }
+
+/**
+ * Body-less PUT (api-contracts.md §6.6)
+ * @param {string} path
+ * @param {number} [expectedStatus]
+ */
+export function putJson(path, expectedStatus) {
+  return request(path, { method: 'PUT' }, expectedStatus);
+}
+
+/**
+ * @param {string} path
+ * @param {number} [expectedStatus]
+ */
+export function deleteJson(path, expectedStatus) {
+  return request(path, { method: 'DELETE' }, expectedStatus);
+}

@@ -549,3 +549,13 @@ a.button-secondary {
 .dialog h2 {
   margin-top: 0;
 }
+
+.subscription {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+
+.subscription p {
+  margin: 0;
+}

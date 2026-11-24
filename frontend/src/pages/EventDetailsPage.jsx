@@ -6,6 +6,7 @@ import { cancelEvent, fetchEvent } from '../api/events.js';
 import { ApiError } from '../api/http.js';
 import CancelEventDialog from '../components/CancelEventDialog.jsx';
 import ParticipationSection from '../components/ParticipationSection.jsx';
+import SubscriptionSection from '../components/SubscriptionSection.jsx';
 import { formatLabel, participationMethodLabel } from '../lib/eventOptions.js';
 import { formatKyivDateTime } from '../lib/kyivTime.js';
 
@@ -37,7 +38,8 @@ import { formatKyivDateTime } from '../lib/kyivTime.js';
  *   publishedAt: string,
  *   cancelledAt: string | null,
  *   eventUrl: string,
- *   canManage: boolean
+ *   canManage: boolean,
+ *   subscribed: boolean
  * }} EventDetails
  */
 
@@ -272,7 +274,19 @@ export default function EventDetailsPage() {
       </dl>
 
       {attendable ? (
-        <ParticipationSection event={event} />
+        <>
+          <ParticipationSection event={event} />
+          {/* api-contracts.md §5.2: no subscription action for cancelled or past events (US-45a AC3) */}
+          <SubscriptionSection
+            eventId={event.id}
+            subscribed={event.subscribed}
+            onChange={(subscribed) => setResult({ ...result, event: { ...event, subscribed } })}
+            onNotSubscribable={() => {
+              setNotice('This event was cancelled or has started, so email updates are no longer available.');
+              setReloads((count) => count + 1);
+            }}
+          />
+        </>
       ) : (
         <section className="details-section">
           <h2>How to participate</h2>
