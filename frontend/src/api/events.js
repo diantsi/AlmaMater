@@ -1,8 +1,13 @@
+import { filtersToParams, NO_FILTERS } from '../lib/catalogFilters.js';
 import { getJson, postJson } from './http.js';
 
-// api-contracts.md §6.1: active upcoming events, ascending by start
-export async function fetchEvents() {
-  const data = await getJson('/api/events');
+/**
+ * api-contracts.md §6.1: active upcoming events matching the filters, ascending by start
+ * @param {import('../lib/catalogFilters.js').CatalogFilters} [filters]
+ */
+export async function fetchEvents(filters = NO_FILTERS) {
+  const query = filtersToParams(filters).toString();
+  const data = await getJson(query ? `/api/events?${query}` : '/api/events');
   return data.items;
 }
 
