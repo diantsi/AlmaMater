@@ -1,8 +1,9 @@
 import {useEffect, useRef, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 
 import {fetchFaculties, fetchTopics} from '../api/dictionaries.js';
 import {createEvent} from '../api/events.js';
-import {fetchOrganizations} from '../api/organizations.js';
+import {useAuth} from '../components/AuthProvider.jsx';
 import ErrorSummary from '../components/ErrorSummary.jsx';
 import {RequiredMark} from '../components/Field.jsx';
 import RadioGroup from '../components/RadioGroup.jsx';
@@ -19,12 +20,28 @@ import {
 } from '../lib/eventForm.js';
 import {FORMAT_OPTIONS, PARTICIPATION_METHOD_OPTIONS} from '../lib/eventOptions.js';
 
-const SUCCESS_VISIBLE_MS = 8000;
 /** @typedef {{ id: string, name: string }} ReferenceOption */
-/** @typedef {{ state: 'loading' } | { state: 'ok', organizations: ReferenceOption[], topics: ReferenceOption[], faculties: ReferenceOption[] } | { state: 'error', message: string }} ReferenceState */
+/** @typedef {{ state: 'loading' } | { state: 'ok', topics: ReferenceOption[], faculties: ReferenceOption[] } | { state: 'error', message: string }} ReferenceState */
 
-// Create and publish an event (US-07 … US-39) through POST /api/events
+// Create and publish an event (US-07 … US-39) through POST /api/events; only for organisers (US-07 AC2)
 export default function CreateEventPage() {
+    const {canPublish, organization} = useAuth();
+    if (!canPublish) {
+        return (
+            <>
+                <h1>Create event</h1>
+                <p className="status status-error" role="alert">
+                    You do not have access to event creation. Only a registered student organisation account can
+                    publish events.
+                </p>
+            </>
+        );
+    }
+    return <CreateEventForm organizationName={organization?.name ?? ''}/>;
+}
+
+/** @param {{ organizationName: string }} props */
+function CreateEventForm({organizationName}) {
     const [reference, setReference] = useState(
         /** @type {ReferenceState} */ ({state: 'loading'})
     );
@@ -33,18 +50,17 @@ export default function CreateEventPage() {
     const [formErrors, setFormErrors] = useState([]);
     const [failedAttempt, setFailedAttempt] = useState(0);
     const [submitting, setSubmitting] = useState(false);
-    const [published, setPublished] = useState(null);
     // Blocks a second submit fired before the disabled button re-renders
     const submittingRef = useRef(false);
     const summaryRef = useRef(null);
-    const successRef = useRef(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         let ignore = false;
-        Promise.all([fetchOrganizations(), fetchTopics(), fetchFaculties()])
+        Promise.all([fetchTopics(), fetchFaculties()])
             .then(
-                ([organizations, topics, faculties]) =>
-                    !ignore && setReference({state: 'ok', organizations, topics, faculties}),
+                ([topics, faculties]) =>
+                    !ignore && setReference({state: 'ok', topics, faculties}),
             )
             .catch((error) => !ignore && setReference({state: 'error', message: error.message}));
         return () => {
@@ -56,14 +72,6 @@ export default function CreateEventPage() {
         if (failedAttempt > 0) summaryRef.current?.focus();
     }, [failedAttempt]);
 
-    useEffect(() => {
-        if (!published) return undefined;
-        // The confirmation sits above the form; bring it into view after submitting from the bottom
-        successRef.current?.focus();
-        const timer = setTimeout(() => setPublished(null), SUCCESS_VISIBLE_MS);
-        return () => clearTimeout(timer);
-    }, [published]);
-
     const setField = (field) => (value) => {
         const next = withField(values, field, value);
         const active = new Set(activeFields(next));
@@ -72,7 +80,6 @@ export default function CreateEventPage() {
         setFieldErrors((current) =>
             Object.fromEntries(Object.entries(current).filter(([name]) => name !== field && active.has(name))),
         );
-        setPublished(null);
     };
 
     const fail = (nextFieldErrors, nextFormErrors) => {
@@ -84,7 +91,6 @@ export default function CreateEventPage() {
     async function handleSubmit(event) {
         event.preventDefault();
         if (submittingRef.current) return;
-        setPublished(null);
 
         const clientErrors = validate(values);
         if (Object.keys(clientErrors).length > 0) {
@@ -98,8 +104,7 @@ export default function CreateEventPage() {
         setFormErrors([]);
         try {
             const created = await createEvent(buildPayload(values));
-            setValues(EMPTY_VALUES);
-            setPublished(created);
+            navigate('/events', {state: {published: created.title}});
         } catch (error) {
             // Entered values stay as they are so the organiser only fixes what failed
             const {fieldErrors: nextFieldErrors, formErrors: nextFormErrors} = publicationErrors(error, values);
@@ -131,11 +136,6 @@ export default function CreateEventPage() {
             )}
             {reference.state === 'ok' && (
                 <form className="event-form" onSubmit={handleSubmit} noValidate aria-busy={submitting}>
-                    {published && (
-                        <p ref={successRef} className="status status-ok" role="status" tabIndex={-1}>
-                            “{published.title}” was published.
-                        </p>
-                    )}
                     <ErrorSummary ref={summaryRef} fieldErrors={fieldErrors} formErrors={formErrors}
                                   labels={FIELD_LABELS}/>
 
@@ -143,7 +143,9 @@ export default function CreateEventPage() {
                         Fields marked <RequiredMark/> are required.
                     </p>
 
-                    <SelectField {...props('organizationId')} options={reference.organizations}/>
+                    <p>
+                        Publishing as <strong>{organizationName}</strong>.
+                    </p>
 
                     <section className="form-section">
                         <h2>About the event</h2>

@@ -1,10 +1,17 @@
+import { Link } from 'react-router-dom';
+
 import { formatLabel } from '../lib/eventOptions.js';
 import { formatKyivDateTime } from '../lib/kyivTime.js';
 
+/**
+ * @param {{ event: { title: string, startsAt: string, organizationName: string, format: string, eventUrl: string } }} props
+ */
 export default function EventCard({ event }) {
   return (
     <article className="event-card">
-      <h2>{event.title}</h2>
+      <h2>
+        <Link to={event.eventUrl}>{event.title}</Link>
+      </h2>
       <dl>
         <dt>Starts</dt>
         <dd>
