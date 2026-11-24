@@ -1,7 +1,8 @@
 import { ApiError } from '../api/http.js';
 import { kyivLocalToIso } from './kyivTime.js';
 
-// Create-event form state and rules (api-contracts.md §5.1, database-schema.md §5); optional fields are not in the form yet
+// Create-event form state and rules (api-contracts.md §5.1, database-schema.md §5); optional fields are not in the form yet.
+// There is no organisation field: the server assigns the signed-in organiser's organisation (US-03)
 
 // Conditional field activated by each format / participation method value
 export const LOCATION_FIELD = { ONLINE: 'meetingUrl', IN_PERSON: 'venue' };
@@ -13,7 +14,6 @@ export const METHOD_FIELD = {
 
 // Every form field in display order; keys are the camelCase request fields
 export const FIELD_LABELS = {
-  organizationId: 'Organisation',
   title: 'Title',
   description: 'Description',
   startsAt: 'Start date and time',
@@ -35,7 +35,6 @@ export const EMPTY_VALUES = Object.fromEntries(Object.keys(FIELD_LABELS).map((fi
 // Fields shown, validated and submitted under the current format and participation method; all are required
 export function activeFields(values) {
   return [
-    'organizationId',
     'title',
     'description',
     'startsAt',

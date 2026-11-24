@@ -13,3 +13,7 @@ export const PARTICIPATION_METHOD_OPTIONS = [
 export function formatLabel(value) {
   return FORMAT_OPTIONS.find((option) => option.value === value)?.label ?? value;
 }
+
+export function participationMethodLabel(value) {
+  return PARTICIPATION_METHOD_OPTIONS.find((option) => option.value === value)?.label ?? value;
+}

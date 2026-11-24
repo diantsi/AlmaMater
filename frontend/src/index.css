@@ -80,10 +80,21 @@ body {
 }
 
 .event-card {
+  position: relative;
   padding: 1rem;
   border: 1px solid #cbd2d9;
   border-radius: 0.5rem;
   background: #fff;
+}
+
+.event-card:hover {
+  border-color: #7b8794;
+  background: #f5f7fa;
+}
+
+.event-card:focus-within {
+  outline: 2px solid #1f2933;
+  outline-offset: 2px;
 }
 
 .event-card h2 {
@@ -216,4 +227,123 @@ body {
 .button-primary:disabled {
   background: #7b8794;
   cursor: progress;
+}
+
+.event-card h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.event-card h2 a:focus {
+  outline: none;
+}
+
+/* Stretched link: the title link covers the whole card, so the card is one click target */
+.event-card h2 a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.preformatted {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.event-details {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.event-details h1 {
+  margin: 0.5rem 0 0;
+}
+
+.details-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1rem;
+  margin: 0.5rem 0;
+}
+
+.details-list dt {
+  color: #52606d;
+}
+
+.details-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.details-section {
+  padding-top: 0.5rem;
+  border-top: 1px solid #cbd2d9;
+}
+
+.details-section h2 {
+  margin: 0.5rem 0;
+  font-size: 1.125rem;
+}
+
+a.button-primary {
+  display: inline-block;
+  text-decoration: none;
+}
+
+@media (max-width: 30rem) {
+  .details-list {
+    grid-template-columns: 1fr;
+    gap: 0.125rem;
+  }
+
+  .details-list dd {
+    margin-bottom: 0.5rem;
+  }
+}
+
+.app-user {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-user-email {
+  color: #52606d;
+  overflow-wrap: anywhere;
+}
+
+.button-secondary {
+  padding: 0.5rem 1rem;
+  border: 1px solid #1f2933;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #1f2933;
+  font: inherit;
+  cursor: pointer;
+}
+
+.button-secondary:disabled {
+  color: #7b8794;
+  border-color: #7b8794;
+  cursor: progress;
+}
+
+.dashboard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #cbd2d9;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.dashboard h2 {
+  margin: 0;
+  font-size: 1.125rem;
 }

@@ -6,6 +6,11 @@ export async function fetchEvents() {
   return data.items;
 }
 
+// api-contracts.md §6.2: full §5.2 event, including cancelled and past ones
+export function fetchEvent(eventId) {
+  return getJson(`/api/events/${encodeURIComponent(eventId)}`);
+}
+
 // api-contracts.md §6.3: validate and publish; resolves with the full §5.2 event on 201
 export function createEvent(payload) {
   return postJson('/api/events', payload);
