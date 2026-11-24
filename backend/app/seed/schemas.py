@@ -3,16 +3,19 @@ from typing import Annotated
 
 from pydantic import (
     AfterValidator,
+    AwareDatetime,
     BaseModel,
     ConfigDict,
     Field,
+    StrictBool,
+    StrictInt,
     StringConstraints,
     model_validator,
 )
 
 from app.auth.service import UNIVERSITY_DOMAIN
 
-NonBlank =Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+NonBlank = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 
 def _lower_email(value: str) -> str:
@@ -57,31 +60,49 @@ def _university_email(value: str) -> str:
 UniversityEmail = Annotated[str, Field(max_length=300), AfterValidator(_university_email)]
 
 
-# Development-only organiser toggle (make seed org / make switch-org), not part of the organisation register
+# Development-only organiser toggle (make seed / make switch-org), not part of the organisation register
 class OrganiserAccount(SeedModel):
     email: UniversityEmail
     is_org: bool
 
 
-class OrganiserFile(SeedModel):
-    accounts: list[OrganiserAccount] = []
-
-    @model_validator(mode="after")
-    def _unique_emails(self) -> "OrganiserFile":
-        if duplicates := _duplicates([account.email for account in self.accounts]):
-            raise ValueError(f"duplicate accounts.email: {', '.join(sorted(duplicates))}")
-        return self
+# database-schema.md §3.5 editable fields (api-contracts.md §5.1); content rules are checked by
+# app.events.service.validate_event at seed time. The publisher is the user whose email is
+# `organization_email`, which must also be that organisation's registered address (C-02).
+class EventSeed(SeedModel):
+    organization_email: Annotated[str, Field(max_length=320), AfterValidator(_lower_email)]
+    topic_code: NonBlank
+    faculty_code: NonBlank
+    title: NonBlank
+    description: NonBlank
+    starts_at: AwareDatetime
+    speaker_name: NonBlank | None = None
+    intended_audience: NonBlank | None = None
+    newcomers_welcome: StrictBool | None = None
+    format: NonBlank
+    venue: NonBlank | None = None
+    meeting_url: NonBlank | None = None
+    duration_minutes: StrictInt | None = None
+    registration_deadline: AwareDatetime | None = None
+    participation_method: NonBlank
+    google_form_url: NonBlank | None = None
+    contact_details: NonBlank | None = None
+    attendance_instructions: NonBlank | None = None
 
 
 class SeedFile(SeedModel):
-    """Team-supplied reference data; rows are upserted by their natural key.
+    """Seed data; organisations, topics and faculties are upserted by their natural key.
 
-    Events are not seeded: every event needs the signed-in user who published it (created_by_user_id).
+    `accounts` are dev-only organiser toggles (each `is_org` is applied). Events are inserted once per
+    (organization_email, title) and only when that address has an organisation and a signed-in user
+    (created_by_user_id); otherwise they are skipped.
     """
 
     organizations: list[OrganizationSeed] = []
     topics: list[DictionarySeed] = []
     faculties: list[DictionarySeed] = []
+    accounts: list[OrganiserAccount] = []
+    events: list[EventSeed] = []
 
     @model_validator(mode="after")
     def _unique_keys(self) -> "SeedFile":
@@ -90,6 +111,10 @@ class SeedFile(SeedModel):
             "organizations.registered_email": [org.registered_email for org in self.organizations],
             "topics.code": [topic.code for topic in self.topics],
             "faculties.code": [faculty.code for faculty in self.faculties],
+            "accounts.email": [account.email for account in self.accounts],
+            "events.(organization_email, title)": [
+                f"{event.organization_email} / {event.title}" for event in self.events
+            ],
         }
         for field, values in checks.items():
             if duplicates := _duplicates(values):
