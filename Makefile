@@ -2,7 +2,7 @@ COMPOSE := docker compose
 
 .DEFAULT_GOAL := help
 
-.PHONY: help up down restart logs ps backend-shell migrate migration seed switch-org test smoke frontend-build check frontend-lock db-shell db-reset backend-lint frontend-lint frontend-typecheck
+.PHONY: help up down restart logs ps backend-shell migrate migration seed switch-org mail-login test smoke frontend-build check frontend-lock db-shell db-reset backend-lint frontend-lint frontend-typecheck
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-15s %s\n", $$1, $$2}'
@@ -10,7 +10,7 @@ help: ## List available targets
 .env:
 	cp .env.example .env
 
-up: .env ## Build and start the stack (frontend, backend, db, migrate)
+up: .env ## Build and start the stack (frontend, backend, db, migrate, worker)
 	$(COMPOSE) up --build --detach --renew-anon-volumes
 
 down: ## Stop the stack, keep the DB volume
@@ -40,6 +40,9 @@ seed: .env ## Apply a seed file (default seed/data.json): organisations, topics,
 switch-org: .env ## Dev only: flip organiser rights of email=<all|email> listed in `accounts` of backend/seed/data.example.json
 	@test -n "$(email)" || (echo "usage: make switch-org email=<all|email|login> (run from the repo root)" && exit 1)
 	$(COMPOSE) run --rm backend python -m app.seed.seeder --switch "$(email)" $(if $(file),--file "$(file)")
+
+mail-login: .env ## Sign the sending mailbox in to Microsoft Graph once (device code); kept in the mail-cache volume
+	$(COMPOSE) run --rm worker python -m app.notifications.mailer --login
 
 test: .env ## Run backend tests against PostgreSQL; args= passed to pytest
 	$(COMPOSE) run --rm backend pytest $(args)

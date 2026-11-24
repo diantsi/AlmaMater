@@ -18,13 +18,21 @@ AlmaMater aims to provide a reliable, centralized catalog where NaUKMA students 
 Prerequisites: Docker with Compose v2, and GNU `make`.
 
 ```sh
-make up      # creates .env from .env.example if missing, builds and starts frontend, backend, db, migrate
+make up      # creates .env from .env.example if missing, builds and starts frontend, backend, db, migrate, worker
 make check   # runs Ruff, ESLint, type checking, backend tests, smoke test and frontend build
 ```
 
 Open http://localhost:5173; it redirects to the `/events` catalog. `make seed file=seed/data.example.json` loads fake example organisations, topics and faculties (events are published through the API by a signed-in organisation). Stop the stack with `make down`. `make help` lists all targets; see `docs/commands.md`.
 
-The current build is the walking skeleton plus a first slice of the event features: Office 365 sign-in for `@ukma.edu.ua` accounts with server-side sessions, a members-only catalog API with event create/update by the owning organisation, an `/events` catalog page and a `/events/new` form for the required fields. The frontend does not handle sign-in yet; event details, filters, cancellation and subscriptions are not implemented yet.
+The current build is the walking skeleton plus a first slice of the event features: Office 365 sign-in for `@ukma.edu.ua` accounts with server-side sessions, a members-only catalog API with event create/update/cancel by the owning organisation, event subscriptions with change and cancellation emails, an `/events` catalog page and a `/events/new` form for the required fields. The frontend does not handle sign-in yet; event details, filters, cancellation and subscriptions exist only in the API so far.
+
+## Notification emails
+When a subscribed event's date, time, format, venue, link or participation method changes, or the event is cancelled, the `worker` service emails every subscriber. `make up` starts it.
+
+- By default (`MAIL_DRY_RUN=true`, also when the key is missing from an older `.env`) nothing is sent, and each finished email is printed to the worker log instead. Watch it with `make logs service=worker`.
+- To send real emails from a team Office 365 mailbox:
+  1. Run `make mail-login`, open the link it prints and enter the code while signed in as the sending mailbox. The sign-in is kept until `make db-reset`.
+  2. Set `MAIL_DRY_RUN=false` in `.env` and run `make up`.
 
 ## Try the scenario live
 Scenario: an organisation publishes an event and it appears in the catalog.

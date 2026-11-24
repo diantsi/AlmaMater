@@ -1,7 +1,7 @@
 # AlmaMater — MVP HTTP API Contract
 
 **Practice:** 4.3 — Technical contracts  
-**Status:** MVP contract aligned with the requirements digest (D-01…D-10, A-01…A-18); implemented so far: `GET /api/health`, the `auth/*` routes (Office 365 sign-in, sessions, CSRF), the members-only catalog reads, `POST /api/events` and `PATCH /api/events/{eventId}` with organisation checks (cancellation and subscriptions pending; see `backend/AGENTS.md` deviations)  
+**Status:** MVP contract aligned with the requirements digest (D-01…D-10, A-01…A-18); implemented so far: `GET /api/health`, the `auth/*` routes (Office 365 sign-in, sessions, CSRF), the members-only catalog reads, `POST /api/events`, `PATCH /api/events/{eventId}` and `POST /api/events/{eventId}/cancel` with organisation checks, the subscription routes and the notification worker (§6.8)  
 **Date:** 2026-10-28  
 **Related:** [`database-schema.md`](database-schema.md), [`requirements.md`](requirements.md), [`analysis/requirements-digest.md`](analysis/requirements-digest.md), [`user-stories/`](user-stories/), ADRs in [`../raw_research_output/adr/`](../raw_research_output/adr/)
 
@@ -456,5 +456,5 @@ The route is anonymous and proves the UI–API connection. Database connectivity
 
 1. ~~Office 365 app registration and redirect URL for the NaUKMA tenant (ADR-005).~~ Settled: single-tenant app registration in the NaUKMA Entra tenant ("My organization only"); local redirect URL `http://localhost:5173/api/auth/callback` (through the frontend proxy); values in `OIDC_*` keys of `.env` (secret only there).
 2. The organisation register with registered addresses, plus the topic and faculty lists (D-07, A-07). Do not invent them.
-3. An authorised mail transport and sender address for the worker (ADR-007, A-18).
-4. Session lifetime: settled at 30 days absolute and 7 days inactivity timeout (configurable via `SESSION_MAX_AGE_DAYS` / `SESSION_IDLE_DAYS`). Retry limits for email delivery remain open.
+3. ~~An authorised mail transport and sender address for the worker (ADR-007, A-18).~~ Settled: Microsoft Graph `sendMail` with delegated `Mail.Send` from one team Office 365 mailbox, through the §10.1 app registration (signed in once with `make mail-login`). The project is a course project, not a public launch, so a team mailbox is the sender.
+4. Session lifetime: settled at 30 days absolute and 7 days inactivity timeout (configurable via `SESSION_MAX_AGE_DAYS` / `SESSION_IDLE_DAYS`). Email delivery: settled at 5 attempts, waiting 1, 5, 15 and 60 minutes between them, then `FAILED`; delivery rows are kept.
