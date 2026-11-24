@@ -7,7 +7,7 @@
 
 - AlmaMater is a members-only event catalog for NaUKMA. Student organisations publish structured events through their registered Office 365 address. Signed-in students browse and filter them, follow an external participation route, and can subscribe to change and cancellation emails
 - Stack: React + Vite (JavaScript) → FastAPI + SQLAlchemy + Alembic → PostgreSQL, run locally with Docker Compose (ADR-001…007)
-- Current state: walking skeleton (`GET /api/health`), Office 365 sign-in with server-side sessions and CSRF (`/api/auth/*`, migration `0003`), and the members-only catalog API for organisations, topics, faculties and events, including event create/update/cancel by the owning organisation, event subscriptions (migration `0004`), and change/cancellation emails sent by the `worker` service through Microsoft Graph (`MAIL_DRY_RUN=true` logs them instead). The frontend has the `/events` catalog (default route), catalog filters kept in the URL, the `/events/:eventId` details page and a `/events/new` form for every event field with a publication confirmation and copyable share link, behind Office 365 sign-in: a `401` redirects to the `/login` page and back after sign-in, `/sign-in` shows sign-in errors, mutations send the CSRF token, and only organisers see "Create event" and their organisation dashboard (see `frontend/AGENTS.md`)
+- Current state: walking skeleton (`GET /api/health`), Office 365 sign-in with server-side sessions and CSRF (`/api/auth/*`, migration `0003`), and the members-only catalog API for organisations, topics, faculties and events, including event create/update/cancel by the owning organisation, event subscriptions (migration `0004`), and change/cancellation emails sent by the `worker` service through Microsoft Graph (`MAIL_DRY_RUN=true` logs them instead). The frontend has the `/events` catalog (default route), catalog filters kept in the URL, the `/events/:eventId` details page with edit (`/events/:eventId/edit`) and cancel for the owning organisation, and a `/events/new` form for every event field with a publication confirmation and copyable share link, behind Office 365 sign-in: a `401` redirects to the `/login` page and back after sign-in, `/sign-in` shows sign-in errors, mutations send the CSRF token, and only organisers see "Create event" and their organisation dashboard (see `frontend/AGENTS.md`)
 
 ## Core Contract
 
@@ -128,7 +128,7 @@ Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/co
 
 - `docs/AGENTS.md` — requirements, user stories, requirement analysis, API contract, data model; when and how to read and maintain them
 - `backend/AGENTS.md` — FastAPI app, Office 365 auth and sessions, catalog modules and event create/update/cancel, subscriptions and the notification worker, SQLAlchemy/DB setup, Alembic migrations, seeder, pytest
-- `frontend/AGENTS.md` — React + Vite client, React Router pages (sign-in, event catalog with filters and organisation dashboard, event details, create-event form with publication confirmation), auth context, `/api` modules and proxy
+- `frontend/AGENTS.md` — React + Vite client, React Router pages (sign-in, event catalog with filters and organisation dashboard, event details with edit and cancel, create-event form with publication confirmation), auth context, `/api` modules and proxy
 
 Owned by root (no child AGENTS.md):
 

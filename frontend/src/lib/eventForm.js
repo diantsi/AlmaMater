@@ -1,7 +1,7 @@
 import { ApiError } from '../api/http.js';
-import { kyivLocalToIso } from './kyivTime.js';
+import { isoToKyivLocal, kyivLocalToIso } from './kyivTime.js';
 
-// Create-event form state and rules (api-contracts.md §5.1, database-schema.md §5).
+// Event form state and rules for create and edit (api-contracts.md §5.1, §6.4, database-schema.md §5).
 // There is no organisation field: the server assigns the signed-in organiser's organisation (US-03)
 
 // Conditional field activated by each format / participation method value
@@ -98,8 +98,16 @@ function formatError(field, value) {
   return null;
 }
 
-// Client-side checks of required values, value syntax and deadline order; the server re-validates everything
+/** @typedef {Record<string, string[]>} FieldErrors */
+/** @typedef {{ fieldErrors: FieldErrors, formErrors: string[] }} SubmissionErrors */
+
+/**
+ * Client-side checks of required values, value syntax and deadline order; the server re-validates everything
+ * @param {Record<string, string>} values
+ * @returns {FieldErrors}
+ */
 export function validate(values) {
+  /** @type {FieldErrors} */
   const errors = {};
   for (const field of activeFields(values)) {
     const value = values[field].trim();
@@ -137,18 +145,51 @@ export function buildPayload(values) {
   );
 }
 
-// Splits a failed publication into per-field messages (details[].field on a visible input) and form-level messages
-export function publicationErrors(error, values) {
+// Form values of a loaded §5.2 event: null optionals become empty inputs, instants Kyiv `datetime-local` values
+export function valuesFromEvent(event) {
+  return Object.fromEntries(
+    Object.keys(FIELD_LABELS).map((field) => {
+      const value = event[field];
+      if (value === null || value === undefined) return [field, ''];
+      if (DATE_TIME_FIELDS.has(field)) return [field, isoToKyivLocal(value)];
+      return [field, String(value)];
+    }),
+  );
+}
+
+// PATCH /api/events/{id} fields (without `revision`): only fields whose value differs from `initial`; an emptied
+// optional and a field made irrelevant by a format / method change are sent as null (api-contracts.md §6.4)
+export function buildPatch(values, initial) {
+  const active = new Set(activeFields(values));
+  const patch = {};
+  for (const field of Object.keys(FIELD_LABELS)) {
+    const value = active.has(field) ? values[field].trim() : '';
+    if (value === initial[field].trim()) continue;
+    patch[field] = value === '' ? null : toRequestValue(field, value);
+  }
+  return patch;
+}
+
+// Splits a failed publish or save into per-field messages (details[].field on a visible input) and form-level
+// messages; `action` names the attempt in generic messages, e.g. "Publication"
+/**
+ * @param {unknown} error
+ * @param {Record<string, string>} values
+ * @param {string} action
+ * @returns {SubmissionErrors}
+ */
+export function submissionErrors(error, values, action) {
   if (!(error instanceof ApiError)) {
     // fetch rejects with a TypeError when the request never reaches the server
     const message =
       error instanceof TypeError
         ? 'Could not reach the server. Check your connection and try again.'
-        : `Publication failed: ${error instanceof Error ? error.message : String(error)}`;
+        : `${action} failed: ${error instanceof Error ? error.message : String(error)}`;
     return { fieldErrors: {}, formErrors: [message] };
   }
 
   const visible = new Set(activeFields(values));
+  /** @type {FieldErrors} */
   const fieldErrors = {};
   const formErrors = [];
   for (const { field, message } of error.details) {
@@ -159,7 +200,7 @@ export function publicationErrors(error, values) {
     }
   }
   if (error.details.length === 0) {
-    formErrors.push(`Publication failed: ${error.message}`);
+    formErrors.push(`${action} failed: ${error.message}`);
   }
   return { fieldErrors, formErrors };
 }

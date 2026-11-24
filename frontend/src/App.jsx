@@ -4,6 +4,7 @@ import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { logout } from './api/auth.js';
 import AuthProvider, { useAuth } from './components/AuthProvider.jsx';
 import CreateEventPage from './pages/CreateEventPage.jsx';
+import EditEventPage from './pages/EditEventPage.jsx';
 import EventDetailsPage from './pages/EventDetailsPage.jsx';
 import EventsPage from './pages/EventsPage.jsx';
 import SignInPage from './pages/SignInPage.jsx';
@@ -54,6 +55,7 @@ function MemberApp() {
           <Route path="/events" element={<EventsPage />} />
           <Route path="/events/new" element={<CreateEventPage />} />
           <Route path="/events/:eventId" element={<EventDetailsPage />} />
+          <Route path="/events/:eventId/edit" element={<EditEventPage />} />
           {/* /events is the default destination */}
           <Route path="*" element={<Navigate to="/events" replace />} />
         </Routes>

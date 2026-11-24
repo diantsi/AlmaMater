@@ -53,3 +53,11 @@ export function kyivLocalToIso(local) {
   const abs = Math.abs(offset);
   return `${date}T${hour}:${minute}:${second}${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;
 }
+
+// RFC 3339 instant → `<input type="datetime-local">` value in Kyiv wall time to the minute, e.g. 2026-11-20T16:00
+export function isoToKyivLocal(iso) {
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return '';
+  const parts = Object.fromEntries(partsFormat.formatToParts(new Date(ms)).map(({ type, value }) => [type, value]));
+  return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}T${pad(parts.hour)}:${pad(parts.minute)}`;
+}

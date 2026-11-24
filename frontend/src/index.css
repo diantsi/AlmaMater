@@ -493,3 +493,59 @@ a.button-primary {
   flex: 1 1 16rem;
   min-width: 0;
 }
+
+.form-actions,
+.manage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+a.button-secondary {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.button-danger {
+  padding: 0.5rem 1rem;
+  border: 1px solid #a61b1b;
+  border-radius: 0.5rem;
+  background: #a61b1b;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button-danger:disabled {
+  background: #cf8a8a;
+  border-color: #cf8a8a;
+  cursor: progress;
+}
+
+.conflict {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+
+.conflict p {
+  margin: 0;
+}
+
+.dialog {
+  max-width: min(32rem, calc(100vw - 2rem));
+  padding: 1.5rem;
+  border: 0;
+  border-radius: 0.75rem;
+  color: inherit;
+}
+
+.dialog::backdrop {
+  background: rgb(31 41 51 / 0.5);
+}
+
+.dialog h2 {
+  margin-top: 0;
+}

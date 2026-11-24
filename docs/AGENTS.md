@@ -3,7 +3,7 @@
 ## Purpose
 
 - Canonical source of truth for AlmaMater MVP scope, user stories, requirement analysis, HTTP API contract and data model
-- `frontend/` and `backend/` (backend Office 365 sign-in, members-only catalog API with event create/update/cancel, subscriptions and notification emails; frontend sign-in, event catalog, event details and create-event form) are implemented against these docs
+- `frontend/` and `backend/` (backend Office 365 sign-in, members-only catalog API with event create/update/cancel, subscriptions and notification emails; frontend sign-in, event catalog, event details with edit and cancel, and create-event form) are implemented against these docs
 
 ## Ownership
 

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 
 import { fetchFaculties, fetchTopics } from '../api/dictionaries.js';
-import { fetchEvent } from '../api/events.js';
+import { cancelEvent, fetchEvent } from '../api/events.js';
 import { ApiError } from '../api/http.js';
+import CancelEventDialog from '../components/CancelEventDialog.jsx';
 import ParticipationSection from '../components/ParticipationSection.jsx';
 import { formatLabel, participationMethodLabel } from '../lib/eventOptions.js';
 import { formatKyivDateTime } from '../lib/kyivTime.js';
@@ -15,6 +16,7 @@ import { formatKyivDateTime } from '../lib/kyivTime.js';
  *   id: string,
  *   organizationName: string,
  *   status: 'PUBLISHED' | 'CANCELLED',
+ *   revision: number,
  *   title: string,
  *   description: string,
  *   startsAt: string,
@@ -34,7 +36,8 @@ import { formatKyivDateTime } from '../lib/kyivTime.js';
  *   attendanceInstructions: string | null,
  *   publishedAt: string,
  *   cancelledAt: string | null,
- *   eventUrl: string
+ *   eventUrl: string,
+ *   canManage: boolean
  * }} EventDetails
  */
 
@@ -63,6 +66,21 @@ function toErrorState(error) {
   return { state: 'error', message: error instanceof Error ? error.message : String(error) };
 }
 
+// §6.5 errors that mean the event can no longer be cancelled; the page reloads to show its real state
+const CANCEL_CONFLICTS = {
+  EVENT_ALREADY_CANCELLED: 'This event had already been cancelled.',
+  EVENT_NOT_EDITABLE: 'This event has already started, so it can no longer be cancelled.',
+};
+
+/** @param {unknown} error */
+function cancelErrorMessage(error) {
+  if (error instanceof ApiError && error.code === 'ORGANIZATION_ACCESS_DENIED') {
+    return 'Only the organisation that published this event can cancel it.';
+  }
+  if (error instanceof TypeError) return 'Could not reach the server. Check your connection and try again.';
+  return `Cancellation failed: ${error instanceof Error ? error.message : String(error)}`;
+}
+
 /**
  * One label/value pair; callers skip it when an optional value is null (BR-43)
  *
@@ -79,7 +97,14 @@ function DetailRow({ label, children }) {
 
 export default function EventDetailsPage() {
   const { eventId = '' } = useParams();
+  const location = useLocation();
   const [result, setResult] = useState(/** @type {DetailsState} */ ({ state: 'loading' }));
+  const [reloads, setReloads] = useState(0);
+  // Set after a save (EditEventPage passes it in the navigation state) or a cancellation
+  const [notice, setNotice] = useState(/** @type {string | null} */ (location.state?.notice ?? null));
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState(/** @type {string | null} */ (null));
 
   useEffect(() => {
     let ignore = false;
@@ -98,7 +123,30 @@ export default function EventDetailsPage() {
     return () => {
       ignore = true;
     };
-  }, [eventId]);
+  }, [eventId, reloads]);
+
+  async function confirmCancel() {
+    if (result.state !== 'ok' || cancelling) return;
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      // Resolves only on 200; the response carries the new status, revision and cancelledAt
+      const { status, revision, cancelledAt } = await cancelEvent(result.event.id);
+      setResult({ ...result, event: { ...result.event, status, revision, cancelledAt } });
+      setNotice('The event was cancelled. It no longer appears on the Events page.');
+      setDialogOpen(false);
+    } catch (error) {
+      if (error instanceof ApiError && error.code in CANCEL_CONFLICTS) {
+        setNotice(CANCEL_CONFLICTS[error.code]);
+        setDialogOpen(false);
+        setReloads((count) => count + 1);
+      } else {
+        setCancelError(cancelErrorMessage(error));
+      }
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   if (result.state === 'loading') return <p className="status">Loading event…</p>;
 
@@ -136,6 +184,8 @@ export default function EventDetailsPage() {
   const cancelled = event.status === 'CANCELLED';
   const past = new Date(event.startsAt).getTime() <= Date.now();
   const attendable = !cancelled && !past;
+  // api-contracts.md §5.2: edit and cancel only for the owning organisation and only while the event is upcoming
+  const manageable = event.canManage && attendable;
   const shareUrl = new URL(event.eventUrl, window.location.origin).href;
 
   return (
@@ -144,6 +194,11 @@ export default function EventDetailsPage() {
         <Link to="/events">← Back to events</Link>
       </p>
 
+      {notice && (
+        <p className="status status-ok" role="status">
+          {notice}
+        </p>
+      )}
       {cancelled && (
         <p className="status status-error" role="status">
           <strong>This event was cancelled</strong>
@@ -158,6 +213,24 @@ export default function EventDetailsPage() {
 
       <h1>{event.title}</h1>
       <p className="hint">Organised by {event.organizationName}</p>
+
+      {manageable && (
+        <div className="manage-actions">
+          <Link className="button-secondary" to={`${event.eventUrl}/edit`}>
+            Edit event
+          </Link>
+          <button
+            type="button"
+            className="button-danger"
+            onClick={() => {
+              setCancelError(null);
+              setDialogOpen(true);
+            }}
+          >
+            Cancel event
+          </button>
+        </div>
+      )}
 
       <p className="preformatted">{event.description}</p>
 
@@ -214,6 +287,17 @@ export default function EventDetailsPage() {
           <Link to={event.eventUrl}>{shareUrl}</Link>
         </p>
       </section>
+
+      {event.canManage && (
+        <CancelEventDialog
+          open={dialogOpen && manageable}
+          title={event.title}
+          pending={cancelling}
+          error={cancelError}
+          onConfirm={confirmCancel}
+          onClose={() => setDialogOpen(false)}
+        />
+      )}
     </article>
   );
 }

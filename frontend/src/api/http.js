@@ -81,3 +81,15 @@ export function postJson(path, body, expectedStatus) {
     expectedStatus,
   );
 }
+
+/**
+ * @param {string} path
+ * @param {unknown} body
+ */
+export function patchJson(path, body) {
+  return request(path, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
