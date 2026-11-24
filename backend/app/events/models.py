@@ -15,6 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.auth.models import User  # noqa: F401  (registers users for the FKs below)
 from app.db.base import Base
 from app.organisations.models import Organization
 
@@ -43,7 +44,7 @@ def _filled(column: str) -> str:
     return f"({column} IS NOT NULL AND btrim({column}) <> '')"
 
 
-# database-schema.md §3.5 minus created_by_user_id / cancelled_by_user_id (no users yet, see backend/AGENTS.md)
+# database-schema.md §3.5
 class Event(Base):
     __tablename__ = "events"
     __table_args__ = (
@@ -68,7 +69,8 @@ class Event(Base):
         ),
         CheckConstraint("registration_deadline <= starts_at", name="ck_events_registration_deadline"),
         CheckConstraint(
-            "(status = 'PUBLISHED' AND cancelled_at IS NULL) OR (status = 'CANCELLED' AND cancelled_at IS NOT NULL)",
+            "(status = 'PUBLISHED' AND cancelled_at IS NULL AND cancelled_by_user_id IS NULL)"
+            " OR (status = 'CANCELLED' AND cancelled_at IS NOT NULL AND cancelled_by_user_id IS NOT NULL)",
             name="ck_events_cancellation",
         ),
         Index("ix_events_status_starts_at", "status", "starts_at"),
@@ -78,6 +80,7 @@ class Event(Base):
     organization_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("organizations.id", ondelete="RESTRICT"), index=True
     )
+    created_by_user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
     status: Mapped[str] = mapped_column(String(16))
     revision: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     title: Mapped[str] = mapped_column(String(160))
@@ -100,6 +103,7 @@ class Event(Base):
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancelled_by_user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
 
     organization: Mapped[Organization] = relationship(lazy="joined")
 

@@ -7,7 +7,7 @@
 
 - AlmaMater is a members-only event catalog for NaUKMA. Student organisations publish structured events through their registered Office 365 address. Signed-in students browse and filter them, follow an external participation route, and can subscribe to change and cancellation emails
 - Stack: React + Vite (JavaScript) → FastAPI + SQLAlchemy + Alembic → PostgreSQL, run locally with Docker Compose (ADR-001…007)
-- Current state: walking skeleton (`GET /api/health`) plus an unauthenticated catalog API for organisations, topics, faculties and events (migration `0002`), including event create/update (`POST`/`PATCH /api/events`); deviations from the contracts are listed in `backend/AGENTS.md`. The frontend has the `/events` catalog (default route) and a `/events/new` form that publishes the required event fields through `POST /api/events` (optional fields not in the form yet)
+- Current state: walking skeleton (`GET /api/health`), Office 365 sign-in with server-side sessions and CSRF (`/api/auth/*`, migration `0003`), and the members-only catalog API for organisations, topics, faculties and events, including event create/update by the owning organisation (`POST`/`PATCH /api/events`); remaining deviations (cancellation, subscriptions, notifications) are listed in `backend/AGENTS.md`. The frontend has the `/events` catalog (default route) and a `/events/new` form for the required event fields, but does not handle sign-in yet, so its API calls return `401` (see `frontend/AGENTS.md`)
 
 ## Core Contract
 
@@ -125,7 +125,7 @@ Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/co
 ## Child DOX Index
 
 - `docs/AGENTS.md` — requirements, user stories, requirement analysis, API contract, data model; when and how to read and maintain them
-- `backend/AGENTS.md` — FastAPI app, catalog modules and event create/update, SQLAlchemy/DB setup, Alembic migrations, seeder, pytest, temporary contract deviations
+- `backend/AGENTS.md` — FastAPI app, Office 365 auth and sessions, catalog modules and event create/update, SQLAlchemy/DB setup, Alembic migrations, seeder, pytest, temporary contract deviations
 - `frontend/AGENTS.md` — React + Vite client, React Router pages (event catalog, create-event form), `/api` modules and proxy
 
 Owned by root (no child AGENTS.md):
@@ -134,7 +134,7 @@ Owned by root (no child AGENTS.md):
 - `CLAUDE.md` — pointer to this file
 - `Makefile` — single entry point for executive commands (see `docs/commands.md`)
 - `compose.yaml` — local stack (`frontend`, `backend`, `db`, `migrate`); service layout documented in `docs/commands.md` §3
-- `.env.example` — local-only placeholder config (Postgres, `DB_PORT`, `FRONTEND_PORT`, `BACKEND_PORT`); `make up` copies it to the git-ignored `.env` only when `.env` is missing, so add new keys to an existing `.env` by hand
+- `.env.example` — local-only placeholder config (Postgres, `DB_PORT`, `FRONTEND_PORT`, `BACKEND_PORT`, `OIDC_*` app registration with an empty secret, `SESSION_SECRET`, `SESSION_MAX_AGE_DAYS`, `SESSION_IDLE_DAYS`, `COOKIE_SECURE`); `compose.yaml` refuses to start without `SESSION_SECRET`; `make up` copies it to the git-ignored `.env` only when `.env` is missing, so add new keys to an existing `.env` by hand
 - `raw_research_output/adr/` — ADR-001…007 (repo structure, UI, backend, data storage, auth, local runtime, event notifications)
 - `raw_research_output/p2/`, `raw_research_output/p3/` — historical practice outputs (audience analysis, VPC, critical analysis, user journey, story map, scope, MVP refinement, acceptance criteria)
 - `prompts/` — prompts for practice outputs 2.1–4.4, the walking skeleton (`4.5_scaffolding_skeleton.md`), frontend feature iterations (`5.1_frontend_iteration_1.md`, `5.2_frontend_iteration_2.md`), Practice 5 guardrail fixes (`5.2_fixing_and_refactoring.md`) and the AI code review (`5.4_ai_code_review.md`)
@@ -171,4 +171,4 @@ The initial application skeleton must establish a working connection between the
 
 ### Verification
 
-- `make up`, then `make check`: Ruff backend lint, ESLint frontend lint, TypeScript `checkJs`, backend pytest (health, DB connection, Alembic migrations, catalog and event create/update endpoints), frontend proxy smoke check and Vite production build
+- `make up`, then `make check`: Ruff backend lint, ESLint frontend lint, TypeScript `checkJs`, backend pytest (health, DB connection, Alembic migrations, auth and sessions, catalog and event create/update endpoints), frontend proxy smoke check and Vite production build
