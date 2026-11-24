@@ -1,27 +1,29 @@
 import {useEffect, useRef, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
 
 import {fetchFaculties, fetchTopics} from '../api/dictionaries.js';
 import {createEvent} from '../api/events.js';
 import {useAuth} from '../components/AuthProvider.jsx';
 import ErrorSummary from '../components/ErrorSummary.jsx';
 import {RequiredMark} from '../components/Field.jsx';
+import PublicationConfirmation from '../components/PublicationConfirmation.jsx';
 import RadioGroup from '../components/RadioGroup.jsx';
 import SelectField from '../components/SelectField.jsx';
 import TextField from '../components/TextField.jsx';
 import {
     EMPTY_VALUES,
     FIELD_LABELS,
+    OPTIONAL_FIELDS,
     activeFields,
     buildPayload,
     publicationErrors,
     validate,
     withField,
 } from '../lib/eventForm.js';
-import {FORMAT_OPTIONS, PARTICIPATION_METHOD_OPTIONS} from '../lib/eventOptions.js';
+import {FORMAT_OPTIONS, NEWCOMERS_OPTIONS, PARTICIPATION_METHOD_OPTIONS} from '../lib/eventOptions.js';
 
 /** @typedef {{ id: string, name: string }} ReferenceOption */
 /** @typedef {{ state: 'loading' } | { state: 'ok', topics: ReferenceOption[], faculties: ReferenceOption[] } | { state: 'error', message: string }} ReferenceState */
+/** @typedef {{ title: string, eventUrl: string }} PublishedEvent */
 
 // Create and publish an event (US-07 … US-39) through POST /api/events; only for organisers (US-07 AC2)
 export default function CreateEventPage() {
@@ -50,10 +52,10 @@ function CreateEventForm({organizationName}) {
     const [formErrors, setFormErrors] = useState([]);
     const [failedAttempt, setFailedAttempt] = useState(0);
     const [submitting, setSubmitting] = useState(false);
+    const [published, setPublished] = useState(/** @type {PublishedEvent | null} */ (null));
     // Blocks a second submit fired before the disabled button re-renders
     const submittingRef = useRef(false);
     const summaryRef = useRef(null);
-    const navigate = useNavigate();
 
     useEffect(() => {
         let ignore = false;
@@ -76,9 +78,11 @@ function CreateEventForm({organizationName}) {
         const next = withField(values, field, value);
         const active = new Set(activeFields(next));
         setValues(next);
-        // Drop the edited field's errors and those of fields that are no longer shown
+        // Drop the edited field's errors, those of fields that are no longer shown and, when the start moves,
+        // the deadline's order error
+        const stale = new Set([field, ...(field === 'startsAt' ? ['registrationDeadline'] : [])]);
         setFieldErrors((current) =>
-            Object.fromEntries(Object.entries(current).filter(([name]) => name !== field && active.has(name))),
+            Object.fromEntries(Object.entries(current).filter(([name]) => !stale.has(name) && active.has(name))),
         );
     };
 
@@ -103,8 +107,10 @@ function CreateEventForm({organizationName}) {
         setFieldErrors({});
         setFormErrors([]);
         try {
+            // createEvent resolves only on 201, so the confirmation never follows a failed publication (US-41 AC2)
             const created = await createEvent(buildPayload(values));
-            navigate('/events', {state: {published: created.title}});
+            setValues(EMPTY_VALUES);
+            setPublished(created);
         } catch (error) {
             // Entered values stay as they are so the organiser only fixes what failed
             const {fieldErrors: nextFieldErrors, formErrors: nextFormErrors} = publicationErrors(error, values);
@@ -121,8 +127,13 @@ function CreateEventForm({organizationName}) {
         value: values[field],
         onChange: setField(field),
         errors: fieldErrors[field],
-        required: true,
+        required: !OPTIONAL_FIELDS.has(field),
+        optional: OPTIONAL_FIELDS.has(field),
     });
+
+    if (published) {
+        return <PublicationConfirmation event={published} onCreateAnother={() => setPublished(null)}/>;
+    }
 
     return (
         <>
@@ -140,7 +151,7 @@ function CreateEventForm({organizationName}) {
                                   labels={FIELD_LABELS}/>
 
                     <p className="hint">
-                        Fields marked <RequiredMark/> are required.
+                        Fields marked <RequiredMark/> are required; fields marked (optional) can be left empty.
                     </p>
 
                     <p>
@@ -152,12 +163,25 @@ function CreateEventForm({organizationName}) {
                         <TextField {...props('title')} maxLength={160}/>
                         <TextField {...props('description')} multiline rows={5}/>
                         <TextField {...props('startsAt')} type="datetime-local" hint="Kyiv time."/>
+                        <TextField
+                            {...props('durationMinutes')}
+                            inputMode="numeric"
+                            hint="Whole number of minutes, for example 90."
+                        />
+                        <TextField {...props('speakerName')} maxLength={160}/>
                     </section>
 
                     <section className="form-section">
-                        <h2>Topic and faculty</h2>
+                        <h2>Topic and audience</h2>
                         <SelectField {...props('topicId')} options={reference.topics}/>
                         <SelectField {...props('facultyId')} options={reference.faculties}/>
+                        <TextField
+                            {...props('intendedAudience')}
+                            multiline
+                            rows={2}
+                            hint="Who the event is for, for example first-year students."
+                        />
+                        <RadioGroup {...props('newcomersWelcome')} options={NEWCOMERS_OPTIONS}/>
                     </section>
 
                     <section className="form-section">
@@ -181,6 +205,11 @@ function CreateEventForm({organizationName}) {
                         {values.participationMethod === 'OPEN_ATTENDANCE' && (
                             <TextField {...props('attendanceInstructions')} multiline rows={3}/>
                         )}
+                        <TextField
+                            {...props('registrationDeadline')}
+                            type="datetime-local"
+                            hint="Kyiv time. Must not be after the start."
+                        />
                     </section>
 
                     <div>

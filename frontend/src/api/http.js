@@ -27,7 +27,8 @@ export function redirectToSignIn() {
   window.location.assign(`/login?returnTo=${encodeURIComponent(returnTo)}`);
 }
 
-async function request(path, options = {}) {
+// `expectedStatus` turns any other success status into an error, so callers never report a success the contract does not define
+async function request(path, options = {}, expectedStatus = undefined) {
   const method = (options.method ?? 'GET').toUpperCase();
   const response = await fetch(path, {
     ...options,
@@ -53,6 +54,9 @@ async function request(path, options = {}) {
     }
     throw error;
   }
+  if (expectedStatus !== undefined && response.status !== expectedStatus) {
+    throw new Error(`Unexpected response status ${response.status}`);
+  }
   return response.status === 204 ? null : response.json();
 }
 
@@ -60,11 +64,20 @@ export function getJson(path) {
   return request(path);
 }
 
-export function postJson(path, body) {
-  return request(path, {
-    method: 'POST',
-    ...(body === undefined
-      ? {}
-      : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
-  });
+/**
+ * @param {string} path
+ * @param {unknown} [body]
+ * @param {number} [expectedStatus]
+ */
+export function postJson(path, body, expectedStatus) {
+  return request(
+    path,
+    {
+      method: 'POST',
+      ...(body === undefined
+        ? {}
+        : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+    },
+    expectedStatus,
+  );
 }

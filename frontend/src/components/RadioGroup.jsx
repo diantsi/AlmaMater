@@ -1,7 +1,7 @@
-import { FieldErrors, RequiredMark } from './Field.jsx';
+import { FieldErrors, OptionalMark, RequiredMark } from './Field.jsx';
 
 // One-of choice over { value, label } options; the fieldset carries `id` so error links can target it
-export default function RadioGroup({ id, label, options, value, onChange, required, errors = [] }) {
+export default function RadioGroup({ id, label, options, value, onChange, required, optional = false, errors = [] }) {
   const errorId = `${id}-error`;
 
   return (
@@ -14,6 +14,7 @@ export default function RadioGroup({ id, label, options, value, onChange, requir
       <legend>
         {label}
         {required && <RequiredMark />}
+        {optional && <OptionalMark />}
       </legend>
       {options.map((option) => (
         <label key={option.value} className="radio">

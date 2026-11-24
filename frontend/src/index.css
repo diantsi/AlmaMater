@@ -457,3 +457,39 @@ a.button-primary {
 .results .status p:last-child {
   margin-bottom: 0;
 }
+
+.optional {
+  color: #52606d;
+  font-weight: 400;
+}
+
+.confirmation {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.confirmation h1 {
+  margin: 0;
+}
+
+.confirmation h1:focus {
+  outline: none;
+}
+
+.confirmation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.share-link {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.share-link input {
+  flex: 1 1 16rem;
+  min-width: 0;
+}

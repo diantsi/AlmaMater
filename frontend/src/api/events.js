@@ -16,7 +16,7 @@ export function fetchEvent(eventId) {
   return getJson(`/api/events/${encodeURIComponent(eventId)}`);
 }
 
-// api-contracts.md §6.3: validate and publish; resolves with the full §5.2 event on 201
+// api-contracts.md §6.3: validate and publish; resolves with the full §5.2 event only on 201 (US-41 AC2)
 export function createEvent(payload) {
-  return postJson('/api/events', payload);
+  return postJson('/api/events', payload, 201);
 }

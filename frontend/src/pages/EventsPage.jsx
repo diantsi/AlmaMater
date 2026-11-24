@@ -1,6 +1,6 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 
-import {Link, useLocation, useNavigate, useSearchParams} from 'react-router-dom';
+import {Link, useSearchParams} from 'react-router-dom';
 
 import {fetchEvents} from '../api/events.js';
 import {useAuth} from '../components/AuthProvider.jsx';
@@ -18,8 +18,6 @@ import {filtersToParams, hasActiveFilters, NO_FILTERS, readFilters} from '../lib
  *   eventUrl: string
  * }} EventListItem
  */
-
-const PUBLISHED_VISIBLE_MS = 8000;
 
 /**
  * @typedef {{ state: 'loading' }
@@ -42,30 +40,6 @@ function OrganizationDashboard() {
                 Create event
             </Link>
         </section>
-    );
-}
-
-// Confirmation after CreateEventPage redirects here with { published: <title> } in router state
-function PublishedNotice() {
-    const location = useLocation();
-    const navigate = useNavigate();
-    const [title, setTitle] = useState(() => location.state?.published ?? null);
-    const noticeRef = useRef(null);
-
-    useEffect(() => {
-        if (!title) return undefined;
-        // Drop the router state so a refresh or back navigation does not show it again
-        navigate(location.pathname + location.search, {replace: true, state: null});
-        noticeRef.current?.focus();
-        const timer = setTimeout(() => setTitle(null), PUBLISHED_VISIBLE_MS);
-        return () => clearTimeout(timer);
-    }, [title, navigate, location.pathname, location.search]);
-
-    if (!title) return null;
-    return (
-        <p ref={noticeRef} className="status status-ok" role="status" tabIndex={-1}>
-            “{title}” was published.
-        </p>
     );
 }
 
@@ -124,7 +98,6 @@ export default function EventsPage() {
 
     return (
         <>
-            <PublishedNotice/>
             <OrganizationDashboard/>
             <h1>Events</h1>
 
