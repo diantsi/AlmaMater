@@ -96,8 +96,8 @@ Prerequisites: Docker with Compose v2 and GNU `make`. Full target list: `docs/co
 
 - `make up`: build and start `frontend`, `backend`, `db`, `migrate`, `worker` (creates `.env` from `.env.example`); UI at http://localhost:5173, API docs at http://localhost:8000/docs
 - `make frontend-up`: start only the frontend dev server for UI work (no backend)
-- `make check`: run Ruff, ESLint, TypeScript `checkJs`, backend pytest, API smoke test and frontend production build; the stack must be started with `make up` first
-- `make test args="-k health"`: backend tests only
+- `make check`: run Ruff, ESLint, TypeScript `checkJs`, backend pytest, frontend Vitest, API smoke test and frontend production build; the stack must be started with `make up` first
+- `make test-all`: every automated test (backend pytest, then frontend Vitest); `make test args="-k health"` / `make frontend-test`: one side only. Strategy and results: `docs/testing-strategy.md`, `docs/testing-report.md`
 - `make migrate` / `make migration name=<slug> rev=<id>`: apply / create Alembic migrations
 - `make seed [file=<path>]`: apply one seed file (default `backend/seed/data.json`): organisations, topics, faculties, organiser `accounts`, events; `file=seed/data.example.json` loads fake dev data, including the team organiser accounts and one event per account (an event is inserted once that account has signed in; re-run `make seed` after signing in)
 - `make switch-org email=<all|email>`: dev-only switch of the team accounts listed in `accounts` of `backend/seed/data.example.json` between organiser and plain member
@@ -174,4 +174,4 @@ The initial application skeleton must establish a working connection between the
 
 ### Verification
 
-- `make up`, then `make check`: Ruff backend lint, ESLint frontend lint, TypeScript `checkJs`, backend pytest (health, DB connection, Alembic migrations, auth and sessions, catalog and event create/update endpoints), frontend proxy smoke check and Vite production build
+- `make up`, then `make check`: Ruff backend lint, ESLint frontend lint, TypeScript `checkJs`, backend pytest (health, DB connection, Alembic migrations, auth and sessions, catalog, event create/update/cancel, subscriptions, notification outbox and worker), frontend Vitest (event form logic), frontend proxy smoke check and Vite production build

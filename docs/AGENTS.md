@@ -28,6 +28,7 @@
 | HTTP routes, DTOs, validation, error codes, auth/CSRF/session | `api-contracts.md` |
 | Tables, columns, constraints, migrations, event lifecycle | `database-schema.md` |
 | Running servers, Docker, migrations, tests, any executive command | `commands.md` |
+| Writing or reviewing automated tests, coverage gaps | `testing-strategy.md`, then `testing-report.md` |
 
 ### Precedence
 
@@ -57,4 +58,7 @@ No child AGENTS.md. Direct contents owned by this file:
 - `analysis/requirements-digest.md` — requirements analysis, product-owner decisions, gaps and open questions
 - `api-contracts.md` — MVP HTTP API contract (routes, DTOs, validation, errors)
 - `database-schema.md` — MVP PostgreSQL data model, constraints, event lifecycle
+- `testing-strategy.md` — testing scope, levels and tools, test organisation, test data management, execution; marks existing [E] vs proposed [P]; update it when tests, fixtures or test targets change
+- `testing-report.md` — automated tests implemented per user story, acceptance criteria → test cases, mutation checks with actual results, final run, remaining gaps
+- `test-generation-prompt.md` — the prompt that produced the tests in `testing-report.md` (historical input; do not edit)
 - `commands.md` — `make`/`Makefile` convention for executive commands and the target list

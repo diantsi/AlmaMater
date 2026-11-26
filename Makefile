@@ -2,7 +2,7 @@ COMPOSE := docker compose
 
 .DEFAULT_GOAL := help
 
-.PHONY: help up frontend-up down restart logs ps backend-shell migrate migration seed switch-org mail-login test smoke frontend-build check frontend-lock db-shell db-reset backend-lint frontend-lint frontend-typecheck
+.PHONY: help up frontend-up down restart logs ps backend-shell migrate migration seed switch-org mail-login test frontend-test test-all smoke frontend-build check frontend-lock db-shell db-reset backend-lint frontend-lint frontend-typecheck
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-15s %s\n", $$1, $$2}'
@@ -50,6 +50,11 @@ mail-login: .env ## Sign the sending mailbox in to Microsoft Graph once (device 
 test: .env ## Run backend tests against PostgreSQL; args= passed to pytest
 	$(COMPOSE) run --rm backend pytest $(args)
 
+frontend-test: .env ## Run frontend unit tests with Vitest (rebuilds the image); args= passed to vitest
+	$(COMPOSE) run --rm --build --no-deps frontend npm run test -- $(args)
+
+test-all: test frontend-test ## Run every automated test: backend pytest, then frontend Vitest
+
 backend-lint: .env ## Check backend Python code with Ruff
 	$(COMPOSE) run --rm --build --no-deps backend ruff check . $(args)
 
@@ -66,7 +71,7 @@ smoke: ## Call /api/health through the frontend proxy (stack must be up)
 frontend-build: .env ## Build the frontend bundle (rebuilds the image; output discarded)
 	$(COMPOSE) run --rm --build --no-deps frontend npm run build -- --outDir /tmp/dist --emptyOutDir
 
-check: backend-lint frontend-lint frontend-typecheck test smoke frontend-build ## Run all guardrails, tests and build
+check: backend-lint frontend-lint frontend-typecheck test frontend-test smoke frontend-build ## Run all guardrails, tests and build
 
 # Empties the container-only node_modules first so the lock lists every platform's optional binaries (npm/cli#4828)
 frontend-lock: .env ## Regenerate frontend/package-lock.json

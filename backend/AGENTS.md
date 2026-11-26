@@ -65,6 +65,10 @@
   - `tests/test_seed.py` (upsert, idempotency, seed file validation, event insert-once and skip reasons, accounts applied before events, example file validity incl. one publishable event per organiser account), `tests/test_organisers.py` (grant creates/re-enables, revoke keeps organisation and events, `canPublish` follows the toggle, switch flips state and only targets listed accounts, `accounts` validation)
   - `tests/test_organisations.py`, `tests/test_dictionaries.py`, `tests/test_events.py` (filters, Kyiv date range, lifecycle visibility, error envelope)
   - `tests/test_events_write.py` (create/update: 201 + `Location`, all-errors-at-once 422, conditional fields, 400 for unknown/immutable fields and bad syntax, revision bump, no-op edit, 409 stale revision / not editable, 404, creator + session organisation, 403 for non-managers / other organisations / bad CSRF, `canManage`)
+  - `tests/test_events_cancel.py` (US-44b: 200 shape, leaves the catalog, URL keeps resolving; 409 already cancelled / past, 403 non-manager / other organisation (before 409), 401, CSRF, 404, 400)
+  - `tests/test_subscriptions.py` (US-45a: subscribe / idempotent / per member, unsubscribe incl. without subscription, 409 cancelled or past, 401, CSRF, 404, 400)
+  - `tests/test_notifications_outbox.py` (US-45b/c: D-10 trigger fields queue one `CHANGED` row per subscriber, other fields / no-op / rejected edits queue none; cancel queues `CANCELLED` rows then ends subscriptions; repeated or unauthorised cancel queues none)
+  - `tests/test_notifications_worker.py` (US-45b/c: real `claim` + `deliver` + templates on the test session via a monkeypatched `worker.SessionLocal`; `mailer.send` or Graph `requests.post` stubbed: email text, Kyiv time, link, one recipient per message, retry and final `FAILED`)
 
 ## Child DOX Index
 
