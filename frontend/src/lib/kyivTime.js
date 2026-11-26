@@ -62,7 +62,8 @@ function kyivOffsetMinutes(ms) {
   return Math.round((wall - ms) / 60000);
 }
 
-// `<input type="datetime-local">` value read as Kyiv wall time → RFC 3339 with offset, e.g. 2026-11-20T16:00:00+02:00
+// `<input type="datetime-local">` value read as Kyiv wall time → RFC 3339 with offset, e.g. 2026-11-20T16:00:00+02:00;
+// null when that wall time does not exist in Kyiv (spring DST gap, Feb 29 of a common year, hour 25, minute 60)
 export function kyivLocalToIso(local) {
   const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(local);
   if (!match) return null;
@@ -74,6 +75,13 @@ export function kyivLocalToIso(local) {
   // Second pass settles the offset when the first guess lands across a DST switch
   let offset = kyivOffsetMinutes(wall);
   offset = kyivOffsetMinutes(wall - offset * 60000);
+
+  // Date.UTC rolls overflowing parts over and a skipped spring time has no instant, so the entered value is real
+  // only if the resulting instant shows exactly that Kyiv wall time
+  const shown = kyivParts(new Date(wall - offset * 60000));
+  const entered = { year, month, day, hour: Number(hour), minute: Number(minute), second: Number(second) };
+  if (Object.entries(entered).some(([part, value]) => shown[part] !== value)) return null;
+
   const sign = offset < 0 ? '-' : '+';
   const abs = Math.abs(offset);
   return `${date}T${hour}:${minute}:${second}${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;

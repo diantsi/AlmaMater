@@ -218,3 +218,50 @@ describe('US-44a submissionErrors: a rejected save is explained, values are kept
     });
   });
 });
+
+// BUG-02 — the client accepts only a complete https:// link, the string it actually sends (US-17b, US-26)
+const HTTPS_MESSAGE = 'Введіть повне посилання, що починається з https://.';
+
+/** Online event collected by Google Form, with `field` set to `url`; the other link stays valid */
+function withLink(field, url) {
+  const values = withField(editForm().values, 'format', 'ONLINE');
+  return { ...values, meetingUrl: 'https://meet.example/ok', googleFormUrl: 'https://forms.example/ok', [field]: url };
+}
+
+describe('BUG-02 validate rejects malformed https links', () => {
+  const malformed = [
+    'https:meet.example/x', // no slashes: new URL() would normalise it to https://meet.example/x
+    'https:/meet.example/x', // one slash
+    'https:///meet.example/x', // three slashes, empty authority
+    'https:\\\\meet.example\\x', // backslashes instead of slashes
+    'https://meet.example\\x', // backslash in the path
+    'https://meet.example/a b', // whitespace inside the link
+    'https:// meet.example/x', // whitespace before the host
+  ];
+
+  describe.each(['meetingUrl', 'googleFormUrl'])('%s', (field) => {
+    it.each(malformed)('shows the field error for %j', (url) => {
+      expect(validate(withLink(field, url))).toEqual({ [field]: [HTTPS_MESSAGE] });
+    });
+
+    it.each(['https://meet.example/x?room=1&lang=uk#join', 'https://forms.gle/AbC123', 'HTTPS://Meet.Example/x'])(
+      'accepts the complete link %j',
+      (url) => {
+        expect(validate(withLink(field, url))).toEqual({});
+      },
+    );
+  });
+});
+
+describe('BUG-01 validate shows a field error for a nonexistent Kyiv time', () => {
+  it.each(['startsAt', 'registrationDeadline'])('%s inside the skipped spring hour', (field) => {
+    const values = {
+      ...editForm().values,
+      startsAt: '2027-03-28T05:00',
+      registrationDeadline: '2027-03-28T01:00',
+      [field]: '2027-03-28T03:30',
+    };
+
+    expect(validate(values)).toEqual({ [field]: ['Введіть коректні дату та час.'] });
+  });
+});

@@ -174,4 +174,4 @@ The initial application skeleton must establish a working connection between the
 
 ### Verification
 
-- `make up`, then `make check`: Ruff backend lint, ESLint frontend lint, TypeScript `checkJs`, backend pytest (health, DB connection, Alembic migrations, auth and sessions, catalog, event create/update/cancel, subscriptions, notification outbox and worker), frontend Vitest (event form logic), frontend proxy smoke check and Vite production build
+- `make up`, then `make check`: Ruff backend lint, ESLint frontend lint, TypeScript `checkJs`, backend pytest (health, DB connection, Alembic migrations, auth and sessions, catalog, event create/update/cancel, subscriptions, notification outbox and worker), frontend Vitest (event form logic, Kyiv time conversion), frontend proxy smoke check and Vite production build

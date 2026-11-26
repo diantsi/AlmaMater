@@ -79,7 +79,10 @@ export function withField(values, field, value) {
   return next;
 }
 
+// The raw string is what gets sent, and `new URL` silently repairs `https:host`, `https:/host`, `https:///host` and
+// backslashes, so the text itself must start with `https://` plus a host and contain no whitespace or backslash
 function isHttpsUrl(value) {
+  if (!/^https:\/\/[^/?#\\\s]/i.test(value) || /[\s\\]/.test(value)) return false;
   try {
     const url = new URL(value);
     return url.protocol === 'https:' && url.host !== '' && !/\s/.test(value);
